@@ -35,4 +35,9 @@ typedef struct movelist_s
 extern move *history;
 extern movelist *moveroot;
 
+void move_apply (move *m);
+void move_undo (move *m);
+movelist *move_newnode (movelist *parent);
+void move_genlist (movelist *start);
+
 #endif

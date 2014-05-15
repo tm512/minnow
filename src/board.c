@@ -4,6 +4,7 @@
 
 #include "int.h"
 #include "board.h"
+#include "move.h"
 
 board *curboard = NULL;
 
@@ -103,9 +104,12 @@ int main (void)
 {
 	board_initialize ();
 
+	moveroot = move_newnode (NULL);
+	move_genlist (moveroot);
+
 	int i;
 	uint8 sq;
-	for (i = 20; i < 100; i++)
+	for (i = 20; 0 && i < 100; i++)
 	{
 		sq = curboard->squares [i];
 		if (i % 10 == 0)

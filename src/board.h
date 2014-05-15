@@ -29,7 +29,7 @@ enum
 // board flags
 enum
 {
-	bf_side, // 0 white to play, 1 black to play
+	bf_side = 1, // 0 white to play, 1 black to play
 };
 
 // square flags
