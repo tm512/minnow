@@ -53,11 +53,11 @@ void board_initialize (void)
 			curboard->squares [i] |= sf_padding;
 
 		// white's starting position
-		if (i >= 21 && i <= 38)
+		if (i >= 21 && i <= 28)
 			curboard->squares [i] |= sf_wocc;
 
 		// black's starting position
-		if (i >= 81 && i <= 98)
+		if (i >= 91 && i <= 98)
 			curboard->squares [i] |= sf_bocc;
 	}
 
@@ -66,7 +66,8 @@ void board_initialize (void)
 	{
 		for (i = 0; i < 8; i++) // pawns, one per file
 		{
-			curboard->pieces [side + i] = pt_pawn | (i << 3) | (pawnrank << 6);
+			//curboard->pieces [side + i] = pt_pawn | (i << 3) | (pawnrank << 6);
+			curboard->pieces [side + i] = 0;
 			curboard->squares [board_getsquare (i, pawnrank)] |= side + i;
 		}
 
@@ -102,14 +103,19 @@ void board_initialize (void)
 
 int main (void)
 {
+	int st;
 	board_initialize ();
 
-	moveroot = move_newnode (NULL);
-	move_genlist (moveroot);
+	// memory leaks ahead
+	for (st = 0; st < 100000; st++)
+	{
+		moveroot = move_newnode (NULL);
+		move_genlist (moveroot);
+	}
 
 	int i;
 	uint8 sq;
-	for (i = 20; 0 && i < 100; i++)
+	for (i = 20; i < 100; i++)
 	{
 		sq = curboard->squares [i];
 		if (i % 10 == 0)

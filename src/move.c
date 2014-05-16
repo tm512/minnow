@@ -84,6 +84,21 @@ void move_undo (move *m)
 }
 
 // move generators, returns a movelist or NULL in case there aren't moves for this piece
+static inline void setside (uint8 piece, uint8 *side, uint8 *occ, uint8 *notocc)
+{
+	if (piece < 16) // white
+	{
+		*side = 0;
+		*occ = sf_wocc;
+		*notocc = sf_bocc;
+	}
+	else
+	{
+		*side = 1;
+		*occ = sf_bocc;
+		*notocc = sf_wocc;
+	}
+}
 
 static int8 pawnforward [2] = { 10, -10 };
 static int8 pawn2forward [2] = { 20, -20 };
@@ -97,19 +112,7 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 
 	ret = it = NULL;
 
-	// todo: move this somewhere else to avoid duplication
-	if (piece < 16) // white
-	{
-		side = 0;
-		occ = sf_wocc;
-		notocc = sf_bocc;
-	}
-	else
-	{
-		side = 1;
-		occ = sf_bocc;
-		notocc = sf_wocc;
-	}
+	setside (piece, &side, &occ, &notocc);
 
 	// forward move possible?
 	if ((curboard->squares [square + pawnforward [side]] & (occ | notocc)) == 0)
@@ -166,6 +169,139 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 	return ret;
 }
 
+static int8 knightmove [8] = { -21, -19, -12, -8, 8, 12, 19, 21 };
+movelist *move_knightmove (movelist *parent, uint8 piece)
+{
+	uint8 side, occ, notocc;
+	movelist *ret, *it;
+	uint8 square = board_piecesquare (piece);
+	int i;
+
+	ret = it = NULL;
+
+	setside (piece, &side, &occ, &notocc);
+
+	for (i = 0; i < 8; i++)
+	{
+		// see if our own piece is here or if this is off the board
+		if (curboard->squares [square + knightmove [i]] & (occ | sf_padding))
+			continue;
+
+		if (!ret)
+			ret = it = move_newnode (parent);
+		else
+		{
+			it->next = move_newnode (parent);
+			it = it->next;
+		}
+
+		it->m->piece = piece;
+		it->m->square = square + knightmove [i];
+		it->m->from = square;
+
+		// taking a piece?
+		if (curboard->squares [square + knightmove [i]] & notocc)
+			it->m->taken = curboard->squares [square + knightmove [i]] & 0x1f;
+	}
+
+	return ret;
+}
+
+movelist *move_slidermove (movelist *parent, uint8 piece, int8 *moves, uint8 nmoves)
+{
+	uint8 side, occ, notocc;
+	movelist *ret, *it;
+	uint8 square = board_piecesquare (piece);
+	int i, j;
+
+	ret = it = NULL;
+
+	setside (piece, &side, &occ, &notocc);
+
+	for (i = 0; i < nmoves; i++)
+	{
+		j = 1;
+		// TODO: maybe precalculate the landing square to avoid all this multiplication
+		while ((curboard->squares [square + moves [i] * j] & (occ | sf_padding)) == 0)
+		{
+			if (!ret)
+				ret = it = move_newnode (parent);
+			else
+			{
+				it->next = move_newnode (parent);
+				it = it->next;
+			}
+
+			it->m->piece = piece;
+			it->m->square = square + moves [i] * j;
+			it->m->from = square;
+
+			if (curboard->squares [square + moves [i] * j] & notocc)
+				it->m->taken = curboard->squares [square + moves [i] * j] & 0x1f;
+
+			j ++;
+		}
+	}
+
+	return ret;
+}
+
+static int8 bishopmove [4] = { -11, -9, 9, 11 };
+movelist *move_bishopmove (movelist *parent, uint8 piece)
+{
+	return move_slidermove (parent, piece, bishopmove, 4);
+}
+
+static int8 rookmove [4] = { -10, -1, 1, 10 };
+movelist *move_rookmove (movelist *parent, uint8 piece)
+{
+	return move_slidermove (parent, piece, rookmove, 4);
+}
+
+static int8 qkmove [8] = { -11, -10, -9, -1, 1, 9, 10, 11 };
+movelist *move_queenmove (movelist *parent, uint8 piece)
+{
+	return move_slidermove (parent, piece, qkmove, 8);
+}
+
+// TODO: castling
+movelist *move_kingmove (movelist *parent, uint8 piece)
+{
+	uint8 side, occ, notocc;
+	movelist *ret, *it;
+	uint8 square = board_piecesquare (piece);
+	int i;
+
+	ret = it = NULL;
+
+	setside (piece, &side, &occ, &notocc);
+
+	for (i = 0; i < 8; i++)
+	{
+		// see if our own piece is here or if this is off the board
+		if (curboard->squares [square + qkmove [i]] & (occ | sf_padding))
+			continue;
+
+		if (!ret)
+			ret = it = move_newnode (parent);
+		else
+		{
+			it->next = move_newnode (parent);
+			it = it->next;
+		}
+
+		it->m->piece = piece;
+		it->m->square = square + qkmove [i];
+		it->m->from = square;
+
+		// taking a piece?
+		if (curboard->squares [square + qkmove [i]] & notocc)
+			it->m->taken = curboard->squares [square + qkmove [i]] & 0x1f;
+	}
+
+	return ret;
+}
+
 movelist *move_newnode (movelist *parent)
 {
 	movelist *ret = malloc (sizeof (movelist));
@@ -215,9 +351,24 @@ void move_genlist (movelist *start)
 			case pt_pawn:
 				movefunc = move_pawnmove;
 			break;
+			case pt_knight:
+				movefunc = move_knightmove;
+			break;
+			case pt_bishop:
+				movefunc = move_bishopmove;
+			break;
+			case pt_rook:
+				movefunc = move_rookmove;
+			break;
+			case pt_queen:
+				movefunc = move_queenmove;
+			break;
+			case pt_king:
+				movefunc = move_kingmove;
+			break;
 			default:
 				movefunc = NULL;
-				printf ("unknown piece type %i\n", curboard->pieces [i] & 0x07);
+			//	printf ("unknown piece type %i\n", curboard->pieces [i] & 0x07);
 			break;
 		}
 
@@ -235,6 +386,7 @@ void move_genlist (movelist *start)
 			else
 				it->next = m;
 
+			/*
 			movelist *p = m;
 			while (p)
 			{
@@ -242,6 +394,7 @@ void move_genlist (movelist *start)
 				        board_getrank (p->m->from), board_getfile (p->m->square), board_getrank (p->m->square));
 				p = p->next;
 			}
+			*/
 
 			// move it to the end of the list
 			while (it->next)
