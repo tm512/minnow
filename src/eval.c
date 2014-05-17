@@ -2,11 +2,14 @@
 #include "board.h"
 
 int16 piecevals [7] = { 0, 100, 300, 310, 500, 900, 10000 };
+void board_print (void);
 
 int16 evaluate (void)
 {
 	int16 wmaterial = 0, bmaterial = 0, *material;
 	int i;
+
+//	board_print ();
 
 	for (i = 0; i < 32; i++)
 	{
@@ -14,6 +17,9 @@ int16 evaluate (void)
 			material = &wmaterial;
 		else
 			material = &bmaterial;
+
+		if (curboard->pieces [i] & pf_taken)
+			continue;
 
 		switch (curboard->pieces [i] & 0x07)
 		{

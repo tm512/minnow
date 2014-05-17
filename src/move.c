@@ -45,6 +45,15 @@ void move_apply (move *m)
 	curboard->flags ^= bf_side;
 }
 
+// make a move, setting it as the current root for searching
+void move_make (movelist *m)
+{
+	movelist *oldroot = moveroot;
+	move_apply (m->m);
+	moveroot = m;
+	move_clearnodes (oldroot);
+}
+
 // undo a move, remove it from history
 void move_undo (move *m)
 {
@@ -62,11 +71,11 @@ void move_undo (move *m)
 
 	// unset piece on the square we're moving to and from
 	curboard->squares [m->from] &= ~0x1f;
-	curboard->squares [m->square] &= ~(0x1f | side);
+	curboard->squares [m->square] &= ~(0x1f | notside);
 	curboard->pieces [m->piece] &= ~0x1f8;
 
 	// set our piece on the new square
-	curboard->squares [m->from] |= m->piece | side;
+	curboard->squares [m->from] |= m->piece | notside;
 	curboard->pieces [m->piece] |= (board_getfile (m->from) << 3) | (board_getrank (m->from) << 6);
 
 	if (m->special == ms_firstmove)
@@ -76,7 +85,7 @@ void move_undo (move *m)
 	if (m->taken < 32) 
 	{
 		curboard->pieces [m->taken] &= ~pf_taken;
-		curboard->squares [board_piecesquare (m->taken)] |= notside;
+		curboard->squares [board_piecesquare (m->taken)] |= m->taken | side;
 	}
 
 	// switch sides
@@ -120,7 +129,6 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 		ret = it = move_newnode (parent);
 
 		it->m->piece = piece;
-		it->m->taken = 32;
 		it->m->square = square + pawnforward [side];
 		it->m->from = square;
 
@@ -134,7 +142,6 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 				it = it->next;
 
 				it->m->piece = piece;
-				it->m->taken = 32;
 				it->m->square = square + pawn2forward [side];
 				it->m->from = square;
 				it->m->special = ms_firstmove;
@@ -318,6 +325,7 @@ movelist *move_newnode (movelist *parent)
 	}
 
 	memset (ret->m, 0, sizeof (move));
+	ret->m->taken = 32;
 
 	ret->score = 0;
 
@@ -327,10 +335,34 @@ movelist *move_newnode (movelist *parent)
 	return ret;
 }
 
+// recursively clean out all non-chosen nodes
+void move_clearnodes (movelist *m)
+{
+	// don't free this one until we clean out all that it links to
+	if (m->next)
+	{
+		move_clearnodes (m->next);
+		m->next = NULL;
+	}
+
+	// don't traverse down the new moveroot
+	if (m == moveroot)
+		return;
+
+	if (m->child)
+	{
+		move_clearnodes (m->child);
+		m->child = NULL;
+	}
+
+	free (m->m);
+	free (m);
+}
+
 // generate child nodes based on the current board
 void move_genlist (movelist *start)
 {
-	uint8 side = !!(curboard->flags & bf_side);
+	uint8 side = !!(curboard->flags & bf_side) * 16;
 	uint8 occ = curboard->flags & bf_side ? sf_bocc : sf_wocc;
 	uint8 notocc = curboard->flags & bf_side ? sf_wocc : sf_bocc;
 	int i;
@@ -339,7 +371,7 @@ void move_genlist (movelist *start)
 
 	it = NULL;
 
-	for (i = 0; i < 16; i++)
+	for (i = side; i < side + 16; i++)
 	{
 		// taken pieces can't move
 		if (curboard->pieces [i] & pf_taken)
@@ -368,7 +400,7 @@ void move_genlist (movelist *start)
 			break;
 			default:
 				movefunc = NULL;
-			//	printf ("unknown piece type %i\n", curboard->pieces [i] & 0x07);
+				//printf ("unknown piece type %i\n", curboard->pieces [i] & 0x07);
 			break;
 		}
 
@@ -386,15 +418,13 @@ void move_genlist (movelist *start)
 			else
 				it->next = m;
 
-			/*
 			movelist *p = m;
-			while (p)
+			while (0 && p)
 			{
 				printf ("%i: %i, %i to %i, %i\n", p->m->piece, board_getfile (p->m->from),
 				        board_getrank (p->m->from), board_getfile (p->m->square), board_getrank (p->m->square));
 				p = p->next;
 			}
-			*/
 
 			// move it to the end of the list
 			while (it->next)
