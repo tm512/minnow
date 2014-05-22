@@ -62,7 +62,7 @@ void move_undo (move *m)
 	curboard->squares [m->from].piece = &curboard->pieces [m->piece];
 	curboard->pieces [m->piece].square = m->from;
 
-	if (m->special == ms_firstmove)
+	if (m->special == ms_firstmove || m->special == ms_enpas)
 		curboard->pieces [m->piece].flags &= ~pf_moved;
 
 	// untake a piece
@@ -93,7 +93,7 @@ static inline void setside (uint8 piece, uint8 *side, uint8 *notside)
 
 static int8 pawnforward [2] = { 10, -10 };
 static int8 pawn2forward [2] = { 20, -20 };
-static int8 pawntake [2][2] = { { 9, 11 }, { -9, -11 } };
+static int8 pawntake [2][4] = { { 9, 11, -1, 1 }, { -9, -11, 1, -1 } };
 movelist *move_pawnmove (movelist *parent, uint8 piece)
 {
 	uint8 side, notside;
@@ -128,14 +128,21 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 				it->m->piece = piece;
 				it->m->square = sqnum + pawn2forward [side];
 				it->m->from = sqnum;
-				it->m->special = ms_firstmove;
+				it->m->special = ms_enpas; // this piece is vulnerable to en passant
 			}
 		}
 	}
 
 	// see if we can take
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < 4; i++)
 	{
+		// break if we shouldn't consider en passant moves
+		if (i > 1 && (!history || history->special != ms_enpas))
+			break;
+
+		if (i > 1 && (sq + pawntake [side] [i])->piece - curboard->pieces != history->piece)
+			continue; // this piece isn't vulnerable to en passant
+
 		if ((sq + pawntake [side] [i])->piece && (sq + pawntake [side] [i])->piece->side == notside
 		    && ((sq + pawntake [side] [i])->piece->flags & pf_taken) == 0)
 		{
@@ -149,8 +156,11 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 
 			it->m->piece = piece;
 			it->m->taken = (sq + pawntake [side] [i])->piece - curboard->pieces;
-			it->m->square = sqnum + pawntake [side] [i];
+			it->m->square = sqnum + pawntake [side] [i > 1 ? i - 2 : i]; // go to the right square with en passant
 			it->m->from = sqnum;
+
+			if (i > 1)
+				it->m->special = ms_enpascap;
 
 			if ((p->flags & pf_moved) == 0)
 				it->m->special = ms_firstmove;

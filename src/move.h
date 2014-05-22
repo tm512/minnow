@@ -5,6 +5,8 @@ enum
 {
 	ms_null,
 	ms_firstmove,
+	ms_enpas,
+	ms_enpascap,
 	ms_kcast,
 	ms_qcast
 };

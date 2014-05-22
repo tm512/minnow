@@ -1,5 +1,8 @@
+#include <stdio.h>
+
 #include "int.h"
 #include "board.h"
+#include "move.h"
 
 int16 piecevals [7] = { 0, 100, 300, 310, 500, 900, 10000 };
 void board_print (void);
@@ -24,6 +27,5 @@ int16 evaluate (void)
 		*material += piecevals [curboard->pieces [i].type];
 	}
 
-//	printf ("evaluating as %i\n", curboard->side);
 	return curboard->side ? bmaterial - wmaterial : wmaterial - bmaterial;
 }

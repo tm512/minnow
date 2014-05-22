@@ -24,12 +24,12 @@ int16 search (movelist *node, uint8 depth, movelist **best)
 		move_apply (it->m);
 //		puts ("apply:");
 //		board_print ();
-//		usleep (500000);
+//		usleep (800000);
 		score = -search (it, depth - 1, NULL);
 		move_undo (it->m);
 //		puts ("undo:");
 //		board_print ();
-//		usleep (500000);
+//		usleep (800000);
 
 		if (score > max)
 		{

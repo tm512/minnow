@@ -115,11 +115,8 @@ void board_print (void)
 
 		if (sq->padding)
 			continue;
-		else if (sq->piece)
+		else if (sq->piece && (sq->piece->flags & pf_taken) == 0)
 		{
-			if (sq->piece->flags & pf_taken)
-				continue;
-
 			if (!sq->piece->side)
 				printf ("\033[1m");
 
@@ -172,9 +169,8 @@ int main (void)
 		search (moveroot, 4, &best);
 
 		move_make (best);
-		if (++i == 400) break;
-//		board_print ();
-//		getchar ();
+		board_print ();
+		getchar ();
 	}
 
 	return 0;
