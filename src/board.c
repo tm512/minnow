@@ -26,8 +26,7 @@ inline uint8 board_getrank (uint8 square)
 
 inline uint8 board_piecesquare (uint8 index)
 {
-	uint16 piece = curboard->pieces [index];
-	return board_getsquare ((piece & 0x38) >> 3, (piece & 0x1c0) >> 6);
+	return 0;
 }
 
 void board_initialize (void)
@@ -39,61 +38,63 @@ void board_initialize (void)
 	if (!curboard)
 		curboard = malloc (sizeof (board));
 
-	curboard->flags = 0;
-	memset (curboard->pieces, 0, 64); // clear piece information
-
-	curboard->parent = curboard->children = curboard->next = NULL;
+	curboard->side = bs_white;
 
 	// set up squares
 	for (i = 0; i < 120; i++)
 	{
-		curboard->squares [i] = 0;
 		// padding squares, we use these in move generation
 		if (i < 21 || i > 98 || i % 10 == 0 || (i + 1) % 10 == 0)
-			curboard->squares [i] |= sf_padding;
+			curboard->squares [i].padding = 1;
+		else
+			curboard->squares [i].padding = 0;
 
-		// white's starting position
-		if (i >= 21 && i <= 38)
-			curboard->squares [i] |= sf_wocc;
-
-		// black's starting position
-		if (i >= 81 && i <= 98)
-			curboard->squares [i] |= sf_bocc;
+		curboard->squares [i].piece = NULL;
 	}
 
 	// set up pieces for both sides
 	for (side = 0; side < 32; side += 16)
 	{
+		// set sides, flags
+		for (i = 0; i < 16; i++)
+		{
+			curboard->pieces [side + i].side = !!side;
+			curboard->pieces [side + i].flags = 0;
+		}
+
 		for (i = 0; i < 8; i++) // pawns, one per file
 		{
-			curboard->pieces [side + i] = pt_pawn | (i << 3) | (pawnrank << 6);
-			curboard->squares [board_getsquare (i, pawnrank)] |= side + i;
+			curboard->pieces [side + i].type = pt_pawn;
+			curboard->pieces [side + i].square = board_getsquare (i, pawnrank);
+			curboard->squares [board_getsquare (i, pawnrank)].piece = &curboard->pieces [side + i];
 		}
 
 		// set up back rank pieces
-		curboard->pieces [side + 8] = pt_knight | (file_b << 3) | (backrank << 6);
-		curboard->squares [board_getsquare (file_b, backrank)] |= side + 8; 
+		curboard->pieces [side + 8].type = curboard->pieces [side + 9].type = pt_knight;
+		curboard->pieces [side + 8].square = board_getsquare (file_b, backrank);
+		curboard->squares [board_getsquare (file_b, backrank)].piece = &curboard->pieces [side + 8]; 
+		curboard->pieces [side + 9].square = board_getsquare (file_g, backrank);
+		curboard->squares [board_getsquare (file_g, backrank)].piece = &curboard->pieces [side + 9]; 
 
-		curboard->pieces [side + 9] = pt_knight | (file_g << 3) | (backrank << 6);
-		curboard->squares [board_getsquare (file_g, backrank)] |= side + 9; 
+		curboard->pieces [side + 10].type = curboard->pieces [side + 11].type = pt_bishop;
+		curboard->pieces [side + 10].square = board_getsquare (file_c, backrank);
+		curboard->squares [board_getsquare (file_c, backrank)].piece = &curboard->pieces [side + 10]; 
+		curboard->pieces [side + 11].square = board_getsquare (file_f, backrank);
+		curboard->squares [board_getsquare (file_f, backrank)].piece = &curboard->pieces [side + 11]; 
 
-		curboard->pieces [side + 10] = pt_bishop | (file_c << 3) | (backrank << 6);
-		curboard->squares [board_getsquare (file_c, backrank)] |= side + 10; 
+		curboard->pieces [side + 12].type = curboard->pieces [side + 13].type = pt_rook;
+		curboard->pieces [side + 12].square = board_getsquare (file_a, backrank);
+		curboard->squares [board_getsquare (file_a, backrank)].piece = &curboard->pieces [side + 12]; 
+		curboard->pieces [side + 13].square = board_getsquare (file_h, backrank);
+		curboard->squares [board_getsquare (file_h, backrank)].piece = &curboard->pieces [side + 13]; 
 
-		curboard->pieces [side + 11] = pt_bishop | (file_f << 3) | (backrank << 6);
-		curboard->squares [board_getsquare (file_f, backrank)] |= side + 11; 
+		curboard->pieces [side + 14].type = pt_queen;
+		curboard->pieces [side + 14].square = board_getsquare (file_d, backrank);
+		curboard->squares [board_getsquare (file_d, backrank)].piece = &curboard->pieces [side + 14]; 
 
-		curboard->pieces [side + 12] = pt_rook | (file_a << 3) | (backrank << 6);
-		curboard->squares [board_getsquare (file_a, backrank)] |= side + 12; 
-
-		curboard->pieces [side + 13] = pt_rook | (file_h << 3) | (backrank << 6);
-		curboard->squares [board_getsquare (file_h, backrank)] |= side + 13; 
-
-		curboard->pieces [side + 14] = pt_queen | (file_d << 3) | (backrank << 6);
-		curboard->squares [board_getsquare (file_d, backrank)] |= side + 14; 
-
-		curboard->pieces [side + 15] = pt_king | (file_e << 3) | (backrank << 6);
-		curboard->squares [board_getsquare (file_e, backrank)] |= side + 15; 
+		curboard->pieces [side + 15].type = pt_king;
+		curboard->pieces [side + 15].square = board_getsquare (file_e, backrank);
+		curboard->squares [board_getsquare (file_e, backrank)].piece = &curboard->pieces [side + 15]; 
 
 		pawnrank += 5;
 		backrank += 7;
@@ -103,27 +104,32 @@ void board_initialize (void)
 void board_print (void)
 {
 	int i;
-	uint8 sq;
+	uint8 rank = 0;
+	square *sq;
+	printf ("\n  |a|b|c|d|e|f|g|h|");
 	for (i = 20; i < 100; i++)
 	{
-		sq = curboard->squares [i];
+		sq = &curboard->squares [i];
 		if (i % 10 == 0)
-			printf ("\n|");
+			printf ("\n|%i|", ++rank);
 
-		if (sq & sf_padding)
+		if (sq->padding)
 			continue;
-		else if (sq & sf_bocc || sq & sf_wocc)
+		else if (sq->piece)
 		{
-			if (sq & sf_wocc)
+			if (sq->piece->flags & pf_taken)
+				continue;
+
+			if (!sq->piece->side)
 				printf ("\033[1m");
 
-			switch (curboard->pieces [sq & 0x1f] & 0x07)
+			switch (sq->piece->type)
 			{
 				case pt_pawn:
 					putchar ('p');
 				break;
 				case pt_knight:
-					putchar ('k');
+					putchar ('n');
 				break;
 				case pt_bishop:
 					putchar ('b');
@@ -132,14 +138,14 @@ void board_print (void)
 					putchar ('r');
 				break;
 				case pt_queen:
-					putchar ('Q');
+					putchar ('q');
 				break;
 				case pt_king:
-					putchar ('K');
+					putchar ('k');
 				break;
 			}
 
-			if (sq & sf_wocc)
+			if (!sq->piece->side)
 				printf ("\033[0m");
 		}
 		else
@@ -155,17 +161,20 @@ void board_print (void)
 int16 search (movelist *node, uint8 depth, movelist **best);
 int main (void)
 {
-	int st;
+	int i = 0;
 	movelist *best;
 	board_initialize ();
+	board_print ();
 	moveroot = move_newnode (NULL);
 
-	while ((curboard->pieces [15] & pf_taken) == 0 && (curboard->pieces [31] & pf_taken) == 0)
+	while ((curboard->pieces [15].flags & pf_taken) == 0 && (curboard->pieces [31].flags & pf_taken) == 0)
 	{
 		search (moveroot, 4, &best);
 
 		move_make (best);
-		board_print ();
+		if (++i == 400) break;
+//		board_print ();
+//		getchar ();
 	}
 
 	return 0;

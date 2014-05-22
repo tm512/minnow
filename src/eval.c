@@ -18,31 +18,12 @@ int16 evaluate (void)
 		else
 			material = &bmaterial;
 
-		if (curboard->pieces [i] & pf_taken)
+		if (curboard->pieces [i].flags & pf_taken)
 			continue;
 
-		switch (curboard->pieces [i] & 0x07)
-		{
-			case pt_pawn:
-				*material += piecevals [pt_pawn];
-			break;
-			case pt_knight:
-				*material += piecevals [pt_knight];
-			break;
-			case pt_bishop:
-				*material += piecevals [pt_bishop];
-			break;
-			case pt_rook:
-				*material += piecevals [pt_rook];
-			break;
-			case pt_queen:
-				*material += piecevals [pt_queen];
-			break;
-			case pt_king:
-				*material += piecevals [pt_king];
-			break;
-		}
+		*material += piecevals [curboard->pieces [i].type];
 	}
 
-	return curboard->flags & bf_side ? bmaterial - wmaterial : wmaterial - bmaterial;
+//	printf ("evaluating as %i\n", curboard->side);
+	return curboard->side ? bmaterial - wmaterial : wmaterial - bmaterial;
 }

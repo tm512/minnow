@@ -12,42 +12,34 @@ movelist *moveroot = NULL;
 // applies a move to curboard, and adds it to history
 void move_apply (move *m)
 {
-	// flag to set on the square
-	uint8 side = curboard->flags & bf_side ? sf_bocc : sf_wocc;
-	uint8 notside = curboard->flags & bf_side ? sf_wocc : sf_bocc;
-
 	// Add move to history
 	if (history)
-	{
 		m->prev = history;
-		history->next = m;
-	}
 
 	history = m;
 
-	// unset piece on the square we're moving to and from
-	curboard->squares [m->square] &= ~0x1f;
-	curboard->squares [m->from] &= ~(0x1f | side);
-	curboard->pieces [m->piece] &= ~0x1f8;
+	// unset piece on the square we're moving from
+	curboard->squares [m->from].piece = NULL;
 
 	// set our piece on the new square
-	curboard->squares [m->square] |= m->piece | side;
-	curboard->pieces [m->piece] |= (board_getfile (m->square) << 3) | (board_getrank (m->square) << 6) | pf_moved;
+	curboard->squares [m->square].piece = &curboard->pieces [m->piece];
+	curboard->pieces [m->piece].square = m->square;
+//	printf ("moving %i to %i\n", m->piece, m->square);
+
+	curboard->pieces [m->piece].flags |= pf_moved;
 
 	// taking a piece?
 	if (m->taken < 32)
-	{
-		curboard->pieces [m->taken] |= pf_taken;
-		curboard->squares [board_piecesquare (m->taken)] &= ~notside;
-	}
+		curboard->pieces [m->taken].flags |= pf_taken;
 
 	// switch sides
-	curboard->flags ^= bf_side;
+	curboard->side = !curboard->side;
 }
 
 // make a move, setting it as the current root for searching
 void move_make (movelist *m)
 {
+//	printf ("playing as %s\n", curboard->side ? "black" : "white");
 	movelist *oldroot = moveroot;
 	move_apply (m->m);
 	moveroot = m;
@@ -57,55 +49,45 @@ void move_make (movelist *m)
 // undo a move, remove it from history
 void move_undo (move *m)
 {
-	uint8 side = curboard->flags & bf_side ? sf_bocc : sf_wocc;
-	uint8 notside = curboard->flags & bf_side ? sf_wocc : sf_bocc;
-
 	// remove from history
 	history = m->prev;
-	m->prev = m->next = NULL;
-
-	if (history)
-		history->next = NULL;
+	m->prev = NULL;
 
 	// this is like move_apply, with to and from swapped:
 
-	// unset piece on the square we're moving to and from
-	curboard->squares [m->from] &= ~0x1f;
-	curboard->squares [m->square] &= ~(0x1f | notside);
-	curboard->pieces [m->piece] &= ~0x1f8;
+	// unset piece on the square we're moving from
+	curboard->squares [m->square].piece = NULL;
 
 	// set our piece on the new square
-	curboard->squares [m->from] |= m->piece | notside;
-	curboard->pieces [m->piece] |= (board_getfile (m->from) << 3) | (board_getrank (m->from) << 6);
+	curboard->squares [m->from].piece = &curboard->pieces [m->piece];
+	curboard->pieces [m->piece].square = m->from;
 
 	if (m->special == ms_firstmove)
-		curboard->pieces [m->piece] &= ~pf_moved;
+		curboard->pieces [m->piece].flags &= ~pf_moved;
 
 	// untake a piece
 	if (m->taken < 32) 
 	{
-		curboard->pieces [m->taken] &= ~pf_taken;
-		curboard->squares [board_piecesquare (m->taken)] |= m->taken | side;
+		curboard->pieces [m->taken].flags &= ~pf_taken;
+		curboard->squares [curboard->pieces [m->taken].square].piece = &curboard->pieces [m->taken];
 	}
 
 	// switch sides
-	curboard->flags ^= bf_side;
+	curboard->side = !curboard->side;
 }
 
 // move generators, returns a movelist or NULL in case there aren't moves for this piece
-static inline void setside (uint8 piece, uint8 *side, uint8 *occ, uint8 *notocc)
+static inline void setside (uint8 piece, uint8 *side, uint8 *notside)
 {
 	if (piece < 16) // white
 	{
-		*side = 0;
-		*occ = sf_wocc;
-		*notocc = sf_bocc;
+		*side = ps_white;
+		*notside = ps_black;
 	}
 	else
 	{
-		*side = 1;
-		*occ = sf_bocc;
-		*notocc = sf_wocc;
+		*side = ps_black;
+		*notside = ps_white;
 	}
 }
 
@@ -114,36 +96,38 @@ static int8 pawn2forward [2] = { 20, -20 };
 static int8 pawntake [2][2] = { { 9, 11 }, { -9, -11 } };
 movelist *move_pawnmove (movelist *parent, uint8 piece)
 {
-	uint8 side, occ, notocc;
+	uint8 side, notside;
 	movelist *ret, *it;
-	uint8 square = board_piecesquare (piece);
+	uint8 sqnum = curboard->pieces [piece].square;
+	square *sq = &curboard->squares [sqnum];
+	struct piece_s *p = &curboard->pieces [piece];
 	int i;
 
 	ret = it = NULL;
 
-	setside (piece, &side, &occ, &notocc);
+	setside (piece, &side, &notside);
 
 	// forward move possible?
-	if ((curboard->squares [square + pawnforward [side]] & (occ | notocc)) == 0)
+	if (!(sq + pawnforward [side])->padding && !(sq + pawnforward [side])->piece)
 	{
 		ret = it = move_newnode (parent);
 
 		it->m->piece = piece;
-		it->m->square = square + pawnforward [side];
-		it->m->from = square;
+		it->m->square = sqnum + pawnforward [side];
+		it->m->from = sqnum;
 
 		// first move, mark this as the move's special, and see if we can move forward 2 ranks
-		if ((curboard->pieces [piece] & pf_moved) == 0)
+		if ((p->flags & pf_moved) == 0)
 		{
 			it->m->special = ms_firstmove;
-			if ((curboard->squares [square + pawn2forward [side]] & (occ | notocc)) == 0)
+			if (!(sq + pawn2forward [side])->piece)
 			{
 				it->next = move_newnode (parent);
 				it = it->next;
 
 				it->m->piece = piece;
-				it->m->square = square + pawn2forward [side];
-				it->m->from = square;
+				it->m->square = sqnum + pawn2forward [side];
+				it->m->from = sqnum;
 				it->m->special = ms_firstmove;
 			}
 		}
@@ -152,7 +136,8 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 	// see if we can take
 	for (i = 0; i < 2; i++)
 	{
-		if (curboard->squares [square + pawntake [side] [i]] & notocc)
+		if ((sq + pawntake [side] [i])->piece && (sq + pawntake [side] [i])->piece->side == notside
+		    && ((sq + pawntake [side] [i])->piece->flags & pf_taken) == 0)
 		{
 			if (!ret)
 				ret = it = move_newnode (parent);
@@ -163,35 +148,36 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 			}
 
 			it->m->piece = piece;
-			it->m->taken = curboard->squares [square + pawntake [side] [i]] & 0x1f;
-			it->m->square = curboard->squares [square + pawntake [side] [i]];
-			it->m->from = square;
+			it->m->taken = (sq + pawntake [side] [i])->piece - curboard->pieces;
+			it->m->square = sqnum + pawntake [side] [i];
+			it->m->from = sqnum;
 
-			if (curboard->pieces [piece] & pf_moved == 0)
+			if ((p->flags & pf_moved) == 0)
 				it->m->special = ms_firstmove;
 		}
 	}
 
-	//printf ("returning %x\n", ret);
 	return ret;
 }
 
 static int8 knightmove [8] = { -21, -19, -12, -8, 8, 12, 19, 21 };
 movelist *move_knightmove (movelist *parent, uint8 piece)
 {
-	uint8 side, occ, notocc;
+	uint8 side, notside;
 	movelist *ret, *it;
-	uint8 square = board_piecesquare (piece);
+	uint8 sqnum = curboard->pieces [piece].square;
+	square *sq = &curboard->squares [sqnum];
 	int i;
 
 	ret = it = NULL;
 
-	setside (piece, &side, &occ, &notocc);
+	setside (piece, &side, &notside);
 
 	for (i = 0; i < 8; i++)
 	{
 		// see if our own piece is here or if this is off the board
-		if (curboard->squares [square + knightmove [i]] & (occ | sf_padding))
+		if (((sq + knightmove [i])->piece && (sq + knightmove [i])->piece->side == side)
+		    || (sq + knightmove [i])->padding)
 			continue;
 
 		if (!ret)
@@ -203,12 +189,13 @@ movelist *move_knightmove (movelist *parent, uint8 piece)
 		}
 
 		it->m->piece = piece;
-		it->m->square = square + knightmove [i];
-		it->m->from = square;
+		it->m->square = sqnum + knightmove [i];
+		it->m->from = sqnum;
 
 		// taking a piece?
-		if (curboard->squares [square + knightmove [i]] & notocc)
-			it->m->taken = curboard->squares [square + knightmove [i]] & 0x1f;
+		if ((sq + knightmove [i])->piece && (sq + knightmove [i])->piece->side == notside
+		    && ((sq + knightmove [i])->piece->flags & pf_taken) == 0)
+			it->m->taken = (sq + knightmove [i])->piece - curboard->pieces;
 	}
 
 	return ret;
@@ -216,20 +203,21 @@ movelist *move_knightmove (movelist *parent, uint8 piece)
 
 movelist *move_slidermove (movelist *parent, uint8 piece, int8 *moves, uint8 nmoves)
 {
-	uint8 side, occ, notocc;
+	uint8 side, notside;
 	movelist *ret, *it;
-	uint8 square = board_piecesquare (piece);
-	int i, j;
+	uint8 sqnum = curboard->pieces [piece].square;
+	square *sq = &curboard->squares [sqnum];
+	int i, offs;
+	int8 j;
 
 	ret = it = NULL;
 
-	setside (piece, &side, &occ, &notocc);
+	setside (piece, &side, &notside);
 
 	for (i = 0; i < nmoves; i++)
 	{
-		j = 1;
-		// TODO: maybe precalculate the landing square to avoid all this multiplication
-		while ((curboard->squares [square + moves [i] * j] & (occ | sf_padding)) == 0)
+		j = moves [i];
+		while (!(sq + j)->padding && (!(sq + j)->piece || (sq + j)->piece->side == notside))
 		{
 			if (!ret)
 				ret = it = move_newnode (parent);
@@ -240,13 +228,18 @@ movelist *move_slidermove (movelist *parent, uint8 piece, int8 *moves, uint8 nmo
 			}
 
 			it->m->piece = piece;
-			it->m->square = square + moves [i] * j;
-			it->m->from = square;
+			it->m->square = sqnum + j;
+			it->m->from = sqnum;
 
-			if (curboard->squares [square + moves [i] * j] & notocc)
-				it->m->taken = curboard->squares [square + moves [i] * j] & 0x1f;
+			if ((sq + j)->piece)
+			{
+				if (((sq + j)->piece->flags & pf_taken) == 0)
+					it->m->taken = (sq + j)->piece - curboard->pieces;
 
-			j ++;
+				break;
+			}
+
+			j += moves [i];
 		}
 	}
 
@@ -274,19 +267,20 @@ movelist *move_queenmove (movelist *parent, uint8 piece)
 // TODO: castling
 movelist *move_kingmove (movelist *parent, uint8 piece)
 {
-	uint8 side, occ, notocc;
+	uint8 side, notside;
 	movelist *ret, *it;
-	uint8 square = board_piecesquare (piece);
-	int i;
+	uint8 sqnum = curboard->pieces [piece].square;
+	square *sq = &curboard->squares [sqnum];
+	int i, offs;
 
 	ret = it = NULL;
 
-	setside (piece, &side, &occ, &notocc);
+	setside (piece, &side, &notside);
 
 	for (i = 0; i < 8; i++)
 	{
 		// see if our own piece is here or if this is off the board
-		if (curboard->squares [square + qkmove [i]] & (occ | sf_padding))
+		if (((sq + qkmove [i])->piece && (sq + qkmove [i])->piece->side == side) || (sq + qkmove [i])->padding)
 			continue;
 
 		if (!ret)
@@ -298,12 +292,13 @@ movelist *move_kingmove (movelist *parent, uint8 piece)
 		}
 
 		it->m->piece = piece;
-		it->m->square = square + qkmove [i];
-		it->m->from = square;
+		it->m->square = sqnum + qkmove [i];
+		it->m->from = sqnum;
 
 		// taking a piece?
-		if (curboard->squares [square + qkmove [i]] & notocc)
-			it->m->taken = curboard->squares [square + qkmove [i]] & 0x1f;
+		if ((sq + qkmove [i])->piece && (sq + qkmove [i])->piece->side == notside
+		    && ((sq + qkmove [i])->piece->flags & pf_taken) == 0)
+			it->m->taken = (sq + qkmove [i])->piece - curboard->pieces;
 	}
 
 	return ret;
@@ -362,9 +357,7 @@ void move_clearnodes (movelist *m)
 // generate child nodes based on the current board
 void move_genlist (movelist *start)
 {
-	uint8 side = !!(curboard->flags & bf_side) * 16;
-	uint8 occ = curboard->flags & bf_side ? sf_bocc : sf_wocc;
-	uint8 notocc = curboard->flags & bf_side ? sf_wocc : sf_bocc;
+	uint8 side = curboard->side * 16;
 	int i;
 	movelist *(*movefunc) (movelist *parent, uint8 piece);
 	movelist *m, *it;
@@ -374,11 +367,11 @@ void move_genlist (movelist *start)
 	for (i = side; i < side + 16; i++)
 	{
 		// taken pieces can't move
-		if (curboard->pieces [i] & pf_taken)
+		if (curboard->pieces [i].flags & pf_taken)
 			continue;
 
 		// set our move function depending on the piece type
-		switch (curboard->pieces [i] & 0x07)
+		switch (curboard->pieces [i].type)
 		{
 			case pt_pawn:
 				movefunc = move_pawnmove;
@@ -400,7 +393,7 @@ void move_genlist (movelist *start)
 			break;
 			default:
 				movefunc = NULL;
-				//printf ("unknown piece type %i\n", curboard->pieces [i] & 0x07);
+//				printf ("unknown piece type %i\n", curboard->pieces [i] & 0x07);
 			break;
 		}
 

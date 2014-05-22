@@ -22,8 +22,14 @@ int16 search (movelist *node, uint8 depth, movelist **best)
 	{
 //		printf ("%x\n", it->m);
 		move_apply (it->m);
-		score = search (it, depth - 1, NULL);
+//		puts ("apply:");
+//		board_print ();
+//		usleep (500000);
+		score = -search (it, depth - 1, NULL);
 		move_undo (it->m);
+//		puts ("undo:");
+//		board_print ();
+//		usleep (500000);
 
 		if (score > max)
 		{
@@ -35,5 +41,7 @@ int16 search (movelist *node, uint8 depth, movelist **best)
 		it = it->next;
 	}
 
+//	if (depth == 4)
+//	printf ("best is %i\n", max);
 	return max;
 }

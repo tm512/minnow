@@ -14,49 +14,37 @@ enum
 	file_h,
 };
 
-// piece types
-enum
-{
-	pt_empty,
-	pt_pawn,
-	pt_knight,
-	pt_bishop,
-	pt_rook,
-	pt_queen,
-	pt_king,
-};
+enum { pf_moved = 1, pf_taken = 2 }; // piece flags
 
-// board flags
-enum
+struct piece_s;
+typedef struct square_s
 {
-	bf_side = 1, // 0 white to play, 1 black to play
-};
+	struct piece_s *piece;
+	uint8 padding;
+} square;
 
-// square flags
-enum
+typedef struct piece_s
 {
-	sf_wocc = 32, // occupied by white
-	sf_bocc = 64, // occupied by black
-	sf_padding = 128
-};
-
-// piece flags
-enum
-{
-	pf_moved = 1024,
-	pf_taken = 2048
-};
+	uint8 square;
+	enum { ps_white, ps_black } side;
+	uint8 flags;
+	enum
+	{
+		pt_none,
+		pt_pawn,
+		pt_knight,
+		pt_bishop,
+		pt_rook,
+		pt_queen,
+		pt_king
+	} type;
+} piece;
 
 typedef struct board_s
 {
-	uint8 flags;
-	uint8 squares [120];
-	uint16 pieces [32]; // 0-15 white, 16-32 black
-
-	// for searching
-	struct board_s *parent;
-	struct board_s *children;
-	struct board_s *next;
+	square squares [120];
+	piece pieces [32]; // 0-15 white, 16-32 black
+	enum { bs_white, bs_black } side; // side to play
 } board;
 
 extern board *curboard;

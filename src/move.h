@@ -19,7 +19,6 @@ typedef struct move_s
 
 	// for game history
 	struct move_s *prev;
-	struct move_s *next;
 } move;
 
 typedef struct movelist_s
