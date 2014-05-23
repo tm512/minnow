@@ -5,10 +5,10 @@
 #include "move.h"
 #include "eval.h"
 
-int16 search (movelist *node, uint8 depth, movelist **best)
+int16 search (movelist *node, uint8 depth, movelist **best, int16 alpha, int16 beta)
 {
 	movelist *it;
-	int16 max = -20000, score;
+	int16 score;
 
 	if (depth == 0)
 		return evaluate ();
@@ -25,15 +25,18 @@ int16 search (movelist *node, uint8 depth, movelist **best)
 //		puts ("apply:");
 //		board_print ();
 //		usleep (800000);
-		score = -search (it, depth - 1, NULL);
+		score = -search (it, depth - 1, NULL, -beta, -alpha);
 		move_undo (it->m);
 //		puts ("undo:");
 //		board_print ();
 //		usleep (800000);
 
-		if (score > max)
+		if (score >= beta)
+			return beta;
+
+		if (score > alpha)
 		{
-			max = score;
+			alpha = score;
 			if (best)
 				*best = it;
 		}
@@ -41,7 +44,5 @@ int16 search (movelist *node, uint8 depth, movelist **best)
 		it = it->next;
 	}
 
-//	if (depth == 4)
-//	printf ("best is %i\n", max);
-	return max;
+	return alpha;
 }

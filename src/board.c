@@ -155,7 +155,7 @@ void board_print (void)
 	putchar ('\n');
 }
 
-int16 search (movelist *node, uint8 depth, movelist **best);
+int16 search (movelist *node, uint8 depth, movelist **best, int16 alpha, int16 beta);
 int main (void)
 {
 	int i = 0;
@@ -166,11 +166,11 @@ int main (void)
 
 	while ((curboard->pieces [15].flags & pf_taken) == 0 && (curboard->pieces [31].flags & pf_taken) == 0)
 	{
-		search (moveroot, 4, &best);
+		search (moveroot, 4, &best, -30000, 30000);
 
 		move_make (best);
 		board_print ();
-		getchar ();
+		//getchar ();
 	}
 
 	return 0;
