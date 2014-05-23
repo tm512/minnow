@@ -26,7 +26,6 @@ typedef struct move_s
 typedef struct movelist_s
 {
 	move *m;
-	int16 score;
 
 	struct movelist_s *parent;
 	struct movelist_s *next;

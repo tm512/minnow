@@ -314,6 +314,7 @@ movelist *move_kingmove (movelist *parent, uint8 piece)
 	return ret;
 }
 
+uint64 numnodes = 0;
 movelist *move_newnode (movelist *parent)
 {
 	movelist *ret = malloc (sizeof (movelist));
@@ -332,10 +333,10 @@ movelist *move_newnode (movelist *parent)
 	memset (ret->m, 0, sizeof (move));
 	ret->m->taken = 32;
 
-	ret->score = 0;
-
 	ret->parent = parent;
 	ret->next = ret->child = NULL;
+
+	numnodes ++;
 
 	return ret;
 }
@@ -362,6 +363,8 @@ void move_clearnodes (movelist *m)
 
 	free (m->m);
 	free (m);
+
+	numnodes --;
 }
 
 // generate child nodes based on the current board

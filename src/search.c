@@ -5,6 +5,8 @@
 #include "move.h"
 #include "eval.h"
 
+#define USEBETA
+
 int16 search (movelist *node, uint8 depth, movelist **best, int16 alpha, int16 beta)
 {
 	movelist *it;
@@ -26,13 +28,17 @@ int16 search (movelist *node, uint8 depth, movelist **best, int16 alpha, int16 b
 //		board_print ();
 //		usleep (800000);
 		score = -search (it, depth - 1, NULL, -beta, -alpha);
-		move_undo (it->m);
 //		puts ("undo:");
 //		board_print ();
 //		usleep (800000);
 
+		#ifdef USEBETA
 		if (score >= beta)
+		{
+			move_undo (it->m);
 			return beta;
+		}
+		#endif
 
 		if (score > alpha)
 		{
@@ -41,6 +47,7 @@ int16 search (movelist *node, uint8 depth, movelist **best, int16 alpha, int16 b
 				*best = it;
 		}
 
+		move_undo (it->m);
 		it = it->next;
 	}
 
