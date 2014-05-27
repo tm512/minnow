@@ -351,6 +351,8 @@ movelist *move_kingmove (movelist *parent, uint8 piece)
 	if ((p->flags & pf_moved) == 0)
 	{
 		curboard->side = !curboard->side;
+		p->flags |= pf_moved;
+
 		// king side
 		// make sure squares are empty, and that the king isn't in check, passing through check, or going into check
 		if (!curboard->squares [p->square + 1].piece && !curboard->squares [p->square + 2].piece &&
@@ -377,6 +379,7 @@ movelist *move_kingmove (movelist *parent, uint8 piece)
 			it->m->special = ms_qcast;
 		}
 
+		p->flags &= ~pf_moved;
 		curboard->side = !curboard->side;
 	}
 
