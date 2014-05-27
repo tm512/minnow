@@ -101,6 +101,27 @@ void board_initialize (void)
 	}
 }
 
+uint8 board_squareattacked (uint8 sq)
+{
+	movelist *m = move_newnode (NULL), *it;
+	move_genlist (m);
+	it = m->child;
+
+	while (it)
+	{
+		if (it->m->square == sq)
+		{
+			move_clearnodes (m);
+			return 1;
+		}
+
+		it = it->next;
+	}
+
+	move_clearnodes (m);
+	return 0;
+}
+
 void board_print (void)
 {
 	int i;
@@ -167,13 +188,13 @@ int main (void)
 
 	while ((curboard->pieces [15].flags & pf_taken) == 0 && (curboard->pieces [31].flags & pf_taken) == 0)
 	{
-		search (moveroot, 6, &best, -30000, 30000);
+		search (moveroot, 5, &best, -30000, 30000);
 
 		move_make (best);
 		board_print ();
 		printf ("%u nodes stored (%fMiB)\n", numnodes,
 		        (float)(numnodes * (sizeof (movelist) + sizeof (move))) / 1048576.0f);
-		getchar ();
+//		getchar ();
 	}
 
 	return 0;

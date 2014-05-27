@@ -42,4 +42,11 @@ movelist *move_newnode (movelist *parent);
 void move_clearnodes (movelist *m);
 void move_genlist (movelist *start);
 
+movelist *move_pawnmove (movelist *parent, uint8 piece);
+movelist *move_knightmove (movelist *parent, uint8 piece);
+movelist *move_bishopmove (movelist *parent, uint8 piece);
+movelist *move_rookmove (movelist *parent, uint8 piece);
+movelist *move_queenmove (movelist *parent, uint8 piece);
+movelist *move_kingmove (movelist *parent, uint8 piece);
+
 #endif
