@@ -6,18 +6,16 @@
 #include "board.h"
 #include "move.h"
 
-move *history = NULL;
+move history [128];
+uint8 htop = 0;
 movelist *moveroot = NULL;
 uint64 numnodes = 0;
 
-// applies a move to curboard, and adds it to history
+// applies a move to curboard
 void move_apply (move *m)
 {
-	// Add move to history
-	if (history)
-		m->prev = history;
-
-	history = m;
+	htop ++;
+	history [htop] = *m;
 
 	// unset piece on the square we're moving from
 	curboard->squares [m->from].piece = NULL;
@@ -82,17 +80,16 @@ void move_make (movelist *m)
 	printf ("%u nodes stored (%fMiB)\n", numnodes,
 	        (float)(numnodes * (sizeof (movelist) + sizeof (move))) / 1048576.0f);
 	movelist *oldroot = moveroot;
-	move_apply (m->m);
+	move_apply (&m->m);
 	moveroot = m;
 	move_clearnodes (oldroot);
+	htop = 0;
 }
 
-// undo a move, remove it from history
+// undo a move
 void move_undo (move *m)
 {
-	// remove from history
-	history = m->prev;
-	m->prev = NULL;
+	htop --;
 
 	// this is like move_apply, with to and from swapped:
 
@@ -156,7 +153,7 @@ static inline void setside (uint8 piece, uint8 *side, uint8 *notside)
 static int8 pawnforward [2] = { 10, -10 };
 static int8 pawn2forward [2] = { 20, -20 };
 static int8 pawntake [2][4] = { { 9, 11, -1, 1 }, { -9, -11, 1, -1 } };
-movelist *move_pawnmove (movelist *parent, uint8 piece)
+movelist *move_pawnmove (uint8 piece)
 {
 	uint8 side, notside;
 	movelist *ret, *it;
@@ -172,24 +169,17 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 	// forward move possible?
 	if (!(sq + pawnforward [side])->padding && !(sq + pawnforward [side])->piece)
 	{
-		ret = it = move_newnode (parent);
-
-		it->m->piece = piece;
-		it->m->square = sqnum + pawnforward [side];
-		it->m->from = sqnum;
+		ret = it = move_newnode (piece, 32, sqnum + pawnforward [side], sqnum);
 
 		// first move, mark this as the move's special, and see if we can move forward 2 ranks
 		if ((p->flags & pf_moved) == 0)
 		{
 			if (!(sq + pawn2forward [side])->piece)
 			{
-				it->next = move_newnode (parent);
+				it->next = move_newnode (piece, 32, sqnum + pawn2forward [side], sqnum);
 				it = it->next;
 
-				it->m->piece = piece;
-				it->m->square = sqnum + pawn2forward [side];
-				it->m->from = sqnum;
-				it->m->special = ms_enpas; // this piece is vulnerable to en passant
+				it->m.special = ms_enpas; // this piece is vulnerable to en passant
 			}
 		}
 
@@ -197,18 +187,15 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 		if ((sq + pawn2forward [side])->padding)
 		{
 			int j;
-			it->m->special = ms_qpromo;
+			it->m.special = ms_qpromo;
 
 			// add the other promotions too
 			for (j = ms_rpromo; j <= ms_npromo; j++)
 			{
-				it->next = move_newnode (parent);
+				it->next = move_newnode (piece, 32, sqnum + pawnforward [side], sqnum);
 				it = it->next;
 	
-				it->m->piece = piece;
-				it->m->square = sqnum + pawnforward [side];
-				it->m->from = sqnum;
-				it->m->special = j;
+				it->m.special = j;
 			}
 		}
 	}
@@ -217,30 +204,44 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 	for (i = 0; i < 4; i++)
 	{
 		// break if we shouldn't consider en passant moves
-		if (i > 1 && (!history || history->special != ms_enpas))
+		if (i > 1 && (!htop || history [htop].special != ms_enpas))
 			break;
 
-		if (i > 1 && (sq + pawntake [side] [i])->piece - curboard->pieces != history->piece)
+		if (i > 1 && (sq + pawntake [side] [i])->piece - curboard->pieces != history [htop].piece)
 			continue; // this piece isn't vulnerable to en passant
 
 		if ((sq + pawntake [side] [i])->piece && (sq + pawntake [side] [i])->piece->side == notside
 		    && ((sq + pawntake [side] [i])->piece->flags & pf_taken) == 0)
 		{
 			if (!ret)
-				ret = it = move_newnode (parent);
+				ret = it = move_newnode (piece, (sq + pawntake [side] [i])->piece - curboard->pieces,
+				                         sqnum + pawntake [side] [i > 1 ? i - 2 : i], sqnum);
 			else
 			{
-				it->next = move_newnode (parent);
+				it->next = move_newnode (piece, (sq + pawntake [side] [i])->piece - curboard->pieces,
+				                         sqnum + pawntake [side] [i > 1 ? i - 2 : i], sqnum);
 				it = it->next;
 			}
 
-			it->m->piece = piece;
-			it->m->taken = (sq + pawntake [side] [i])->piece - curboard->pieces;
-			it->m->square = sqnum + pawntake [side] [i > 1 ? i - 2 : i]; // go to the right square with en passant
-			it->m->from = sqnum;
-
 			if (i > 1)
-				it->m->special = ms_enpascap;
+				it->m.special = ms_enpascap;
+
+			// moving onto the first rank of the opponent?
+			if ((sq + pawn2forward [side])->padding)
+			{
+				int j;
+				it->m.special = ms_qpromo;
+
+				// add the other promotions too
+				for (j = ms_rpromo; j <= ms_npromo; j++)
+				{
+					it->next = move_newnode (piece, (sq + pawntake [side] [i])->piece - curboard->pieces,
+					                         sqnum + pawntake [side] [i > 1 ? i - 2 : i], sqnum);
+					it = it->next;
+	
+					it->m.special = j;
+				}
+			}
 		}
 	}
 
@@ -248,7 +249,7 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 }
 
 static int8 knightmove [8] = { -21, -19, -12, -8, 8, 12, 19, 21 };
-movelist *move_knightmove (movelist *parent, uint8 piece)
+movelist *move_knightmove (uint8 piece)
 {
 	uint8 side, notside;
 	movelist *ret, *it;
@@ -268,27 +269,23 @@ movelist *move_knightmove (movelist *parent, uint8 piece)
 			continue;
 
 		if (!ret)
-			ret = it = move_newnode (parent);
+			ret = it = move_newnode (piece, 32, sqnum + knightmove [i], sqnum);
 		else
 		{
-			it->next = move_newnode (parent);
+			it->next = move_newnode (piece, 32, sqnum + knightmove [i], sqnum);
 			it = it->next;
 		}
-
-		it->m->piece = piece;
-		it->m->square = sqnum + knightmove [i];
-		it->m->from = sqnum;
 
 		// taking a piece?
 		if ((sq + knightmove [i])->piece && (sq + knightmove [i])->piece->side == notside
 		    && ((sq + knightmove [i])->piece->flags & pf_taken) == 0)
-			it->m->taken = (sq + knightmove [i])->piece - curboard->pieces;
+			it->m.taken = (sq + knightmove [i])->piece - curboard->pieces;
 	}
 
 	return ret;
 }
 
-movelist *move_slidermove (movelist *parent, uint8 piece, int8 *moves, uint8 nmoves)
+movelist *move_slidermove (uint8 piece, int8 *moves, uint8 nmoves)
 {
 	uint8 side, notside;
 	movelist *ret, *it;
@@ -307,21 +304,17 @@ movelist *move_slidermove (movelist *parent, uint8 piece, int8 *moves, uint8 nmo
 		while (!(sq + j)->padding && (!(sq + j)->piece || (sq + j)->piece->side == notside))
 		{
 			if (!ret)
-				ret = it = move_newnode (parent);
+				ret = it = move_newnode (piece, 32, sqnum + j, sqnum);
 			else
 			{
-				it->next = move_newnode (parent);
+				it->next = move_newnode (piece, 32, sqnum + j, sqnum);
 				it = it->next;
 			}
-
-			it->m->piece = piece;
-			it->m->square = sqnum + j;
-			it->m->from = sqnum;
 
 			if ((sq + j)->piece)
 			{
 				if (((sq + j)->piece->flags & pf_taken) == 0)
-					it->m->taken = (sq + j)->piece - curboard->pieces;
+					it->m.taken = (sq + j)->piece - curboard->pieces;
 
 				break;
 			}
@@ -334,24 +327,24 @@ movelist *move_slidermove (movelist *parent, uint8 piece, int8 *moves, uint8 nmo
 }
 
 static int8 bishopmove [4] = { -11, -9, 9, 11 };
-movelist *move_bishopmove (movelist *parent, uint8 piece)
+movelist *move_bishopmove (uint8 piece)
 {
-	return move_slidermove (parent, piece, bishopmove, 4);
+	return move_slidermove (piece, bishopmove, 4);
 }
 
 static int8 rookmove [4] = { -10, -1, 1, 10 };
-movelist *move_rookmove (movelist *parent, uint8 piece)
+movelist *move_rookmove (uint8 piece)
 {
-	return move_slidermove (parent, piece, rookmove, 4);
+	return move_slidermove (piece, rookmove, 4);
 }
 
 static int8 qkmove [8] = { -11, -10, -9, -1, 1, 9, 10, 11 };
-movelist *move_queenmove (movelist *parent, uint8 piece)
+movelist *move_queenmove (uint8 piece)
 {
-	return move_slidermove (parent, piece, qkmove, 8);
+	return move_slidermove (piece, qkmove, 8);
 }
 
-movelist *move_kingmove (movelist *parent, uint8 piece)
+movelist *move_kingmove (uint8 piece)
 {
 	uint8 side, notside;
 	movelist *ret, *it;
@@ -371,21 +364,17 @@ movelist *move_kingmove (movelist *parent, uint8 piece)
 			continue;
 
 		if (!ret)
-			ret = it = move_newnode (parent);
+			ret = it = move_newnode (piece, 32, sqnum + qkmove [i], sqnum);
 		else
 		{
-			it->next = move_newnode (parent);
+			it->next = move_newnode (piece, 32, sqnum + qkmove [i], sqnum);
 			it = it->next;
 		}
-
-		it->m->piece = piece;
-		it->m->square = sqnum + qkmove [i];
-		it->m->from = sqnum;
 
 		// taking a piece?
 		if ((sq + qkmove [i])->piece && (sq + qkmove [i])->piece->side == notside
 		    && ((sq + qkmove [i])->piece->flags & pf_taken) == 0)
-			it->m->taken = (sq + qkmove [i])->piece - curboard->pieces;
+			it->m.taken = (sq + qkmove [i])->piece - curboard->pieces;
 	}
 
 	// castling
@@ -400,11 +389,8 @@ movelist *move_kingmove (movelist *parent, uint8 piece)
 		    (curboard->pieces [13].flags & pf_moved) == 0 && !board_squareattacked (p->square) &&
 		    !board_squareattacked (p->square + 1) && !board_squareattacked (p->square + 2))
 		{
-			it->next = move_newnode (parent);
-			it->m->piece = piece;
-			it->m->square = sqnum + 2;
-			it->m->from = sqnum;
-			it->m->special = ms_kcast;
+			it->next = move_newnode (piece, 32, sqnum + 2, sqnum);
+			it->m.special = ms_kcast;
 		}
 
 		// queen side
@@ -413,11 +399,8 @@ movelist *move_kingmove (movelist *parent, uint8 piece)
 		    !board_squareattacked (p->square) && !board_squareattacked (p->square - 1) &&
 		    !board_squareattacked (p->square - 2))
 		{
-			it->next = move_newnode (parent);
-			it->m->piece = piece;
-			it->m->square = sqnum - 2;
-			it->m->from = sqnum;
-			it->m->special = ms_qcast;
+			it->next = move_newnode (piece, 32, sqnum - 2, sqnum);
+			it->m.special = ms_qcast;
 		}
 
 		p->flags &= ~pf_moved;
@@ -427,25 +410,19 @@ movelist *move_kingmove (movelist *parent, uint8 piece)
 	return ret;
 }
 
-movelist *move_newnode (movelist *parent)
+movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 {
 	movelist *ret = malloc (sizeof (movelist));
 
 	if (!ret)
 		return NULL;
 
-	ret->m = malloc (sizeof (move));
+	ret->m.piece = piece;
+	ret->m.taken = taken;
+	ret->m.square = square;
+	ret->m.from = from;
+	ret->m.special = 0;
 
-	if (!ret->m)
-	{
-		free (ret);
-		return NULL;
-	}
-
-	memset (ret->m, 0, sizeof (move));
-	ret->m->taken = 32;
-
-	ret->parent = parent;
 	ret->next = ret->child = NULL;
 
 	numnodes ++;
@@ -473,7 +450,6 @@ void move_clearnodes (movelist *m)
 		m->child = NULL;
 	}
 
-	free (m->m);
 	free (m);
 
 	numnodes --;
@@ -484,7 +460,7 @@ void move_genlist (movelist *start)
 {
 	uint8 side = curboard->side * 16;
 	int i;
-	movelist *(*movefunc) (movelist *parent, uint8 piece);
+	movelist *(*movefunc) (uint8 piece);
 	movelist *m, *it;
 
 	it = NULL;
@@ -518,13 +494,12 @@ void move_genlist (movelist *start)
 			break;
 			default:
 				movefunc = NULL;
-//				printf ("unknown piece type %i\n", curboard->pieces [i] & 0x07);
 			break;
 		}
 
 		// generate all moves from this piece
 		if (movefunc)
-			m = movefunc (start, i);
+			m = movefunc (i);
 		else	
 			continue;
 
@@ -535,14 +510,6 @@ void move_genlist (movelist *start)
 				start->child = it = m;
 			else
 				it->next = m;
-
-			movelist *p = m;
-			while (0 && p)
-			{
-				printf ("%i: %i, %i to %i, %i\n", p->m->piece, board_getfile (p->m->from),
-				        board_getrank (p->m->from), board_getfile (p->m->square), board_getrank (p->m->square));
-				p = p->next;
-			}
 
 			// move it to the end of the list
 			while (it->next)

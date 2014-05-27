@@ -22,7 +22,7 @@ int16 search (movelist *node, uint8 depth, movelist **best, int16 alpha, int16 b
 	while (it)
 	{
 //		printf ("%x\n", it->m);
-		move_apply (it->m);
+		move_apply (&it->m);
 //		if (board_squareattacked (curboard->pieces [!curboard->side * 16 + 15].square))
 //			illegal ++;
 //		puts ("apply:");
@@ -36,7 +36,7 @@ int16 search (movelist *node, uint8 depth, movelist **best, int16 alpha, int16 b
 		#if 1
 		if (score >= beta)
 		{
-			move_undo (it->m);
+			move_undo (&it->m);
 			return beta;
 		}
 		#endif
@@ -55,13 +55,13 @@ int16 search (movelist *node, uint8 depth, movelist **best, int16 alpha, int16 b
 				it->next = node->child;
 				node->child = it;
 
-				move_undo (it->m);
+				move_undo (&it->m);
 				it = prev->next;
 				continue;
 			}
 		}
 
-		move_undo (it->m);
+		move_undo (&it->m);
 		prev = it;
 		it = it->next;
 	}
