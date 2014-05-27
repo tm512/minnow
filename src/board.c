@@ -192,8 +192,8 @@ int main (void)
 
 		move_make (best);
 		board_print ();
-		printf ("%u nodes stored (%fMiB)\n", numnodes,
-		        (float)(numnodes * (sizeof (movelist) + sizeof (move))) / 1048576.0f);
+//		printf ("%u nodes stored (%fMiB)\n", numnodes,
+//		        (float)(numnodes * (sizeof (movelist) + sizeof (move))) / 1048576.0f);
 //		getchar ();
 	}
 

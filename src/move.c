@@ -8,6 +8,7 @@
 
 move *history = NULL;
 movelist *moveroot = NULL;
+uint64 numnodes = 0;
 
 // applies a move to curboard, and adds it to history
 void move_apply (move *m)
@@ -24,9 +25,29 @@ void move_apply (move *m)
 	// set our piece on the new square
 	curboard->squares [m->square].piece = &curboard->pieces [m->piece];
 	curboard->pieces [m->piece].square = m->square;
-//	printf ("moving %i to %i\n", m->piece, m->square);
+
+	if (m->special == ms_null && (curboard->pieces [m->piece].flags & pf_moved) == 0)
+		m->special = ms_firstmove;
 
 	curboard->pieces [m->piece].flags |= pf_moved;
+
+	// kingside castling
+	if (m->special == ms_kcast)
+	{
+		piece *rook = &curboard->pieces [curboard->side * 16 + 13];
+		curboard->squares [rook->square].piece = NULL;
+		curboard->squares [m->square - 1].piece = rook;
+		rook->square = m->square - 1;
+	}
+
+	// queenside castling
+	if (m->special == ms_qcast)
+	{
+		piece *rook = &curboard->pieces [curboard->side * 16 + 12];
+		curboard->squares [rook->square].piece = NULL;
+		curboard->squares [m->square + 1].piece = rook;
+		rook->square = m->square + 1;
+	}
 
 	// taking a piece?
 	if (m->taken < 32)
@@ -39,7 +60,8 @@ void move_apply (move *m)
 // make a move, setting it as the current root for searching
 void move_make (movelist *m)
 {
-//	printf ("playing as %s\n", curboard->side ? "black" : "white");
+	printf ("%u nodes stored (%fMiB)\n", numnodes,
+	        (float)(numnodes * (sizeof (movelist) + sizeof (move))) / 1048576.0f);
 	movelist *oldroot = moveroot;
 	move_apply (m->m);
 	moveroot = m;
@@ -64,6 +86,24 @@ void move_undo (move *m)
 
 	if (m->special == ms_firstmove || m->special == ms_enpas)
 		curboard->pieces [m->piece].flags &= ~pf_moved;
+
+	// kingside castling
+	if (m->special == ms_kcast)
+	{
+		piece *rook = &curboard->pieces [curboard->side * 16 + 13];
+		curboard->squares [rook->square].piece = NULL;
+		curboard->squares [m->square + 1].piece = rook;
+		rook->square = m->square + 1;
+	}
+
+	// queenside castling
+	if (m->special == ms_qcast)
+	{
+		piece *rook = &curboard->pieces [curboard->side * 16 + 12];
+		curboard->squares [rook->square].piece = NULL;
+		curboard->squares [m->square - 2].piece = rook;
+		rook->square = m->square - 2;
+	}
 
 	// untake a piece
 	if (m->taken < 32) 
@@ -119,7 +159,6 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 		// first move, mark this as the move's special, and see if we can move forward 2 ranks
 		if ((p->flags & pf_moved) == 0)
 		{
-			it->m->special = ms_firstmove;
 			if (!(sq + pawn2forward [side])->piece)
 			{
 				it->next = move_newnode (parent);
@@ -161,9 +200,6 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 
 			if (i > 1)
 				it->m->special = ms_enpascap;
-
-			if ((p->flags & pf_moved) == 0)
-				it->m->special = ms_firstmove;
 		}
 	}
 
@@ -274,7 +310,6 @@ movelist *move_queenmove (movelist *parent, uint8 piece)
 	return move_slidermove (parent, piece, qkmove, 8);
 }
 
-// TODO: castling
 movelist *move_kingmove (movelist *parent, uint8 piece)
 {
 	uint8 side, notside;
@@ -282,6 +317,7 @@ movelist *move_kingmove (movelist *parent, uint8 piece)
 	uint8 sqnum = curboard->pieces [piece].square;
 	square *sq = &curboard->squares [sqnum];
 	int i, offs;
+	struct piece_s *p = &curboard->pieces [piece];
 
 	ret = it = NULL;
 
@@ -311,10 +347,42 @@ movelist *move_kingmove (movelist *parent, uint8 piece)
 			it->m->taken = (sq + qkmove [i])->piece - curboard->pieces;
 	}
 
+	// castling
+	if ((p->flags & pf_moved) == 0)
+	{
+		curboard->side = !curboard->side;
+		// king side
+		// make sure squares are empty, and that the king isn't in check, passing through check, or going into check
+		if (!curboard->squares [p->square + 1].piece && !curboard->squares [p->square + 2].piece &&
+		    (curboard->pieces [13].flags & pf_moved) == 0 && !board_squareattacked (p->square) &&
+		    !board_squareattacked (p->square + 1) && !board_squareattacked (p->square + 2))
+		{
+			it->next = move_newnode (parent);
+			it->m->piece = piece;
+			it->m->square = sqnum + 2;
+			it->m->from = sqnum;
+			it->m->special = ms_kcast;
+		}
+
+		// queen side
+		if (!curboard->squares [p->square - 1].piece && !curboard->squares [p->square - 2].piece &&
+		    !curboard->squares [p->square - 3].piece && (curboard->pieces [12].flags & pf_moved) == 0 && 
+		    !board_squareattacked (p->square) && !board_squareattacked (p->square - 1) &&
+		    !board_squareattacked (p->square - 2))
+		{
+			it->next = move_newnode (parent);
+			it->m->piece = piece;
+			it->m->square = sqnum - 2;
+			it->m->from = sqnum;
+			it->m->special = ms_qcast;
+		}
+
+		curboard->side = !curboard->side;
+	}
+
 	return ret;
 }
 
-uint64 numnodes = 0;
 movelist *move_newnode (movelist *parent)
 {
 	movelist *ret = malloc (sizeof (movelist));
