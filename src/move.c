@@ -49,6 +49,25 @@ void move_apply (move *m)
 		rook->square = m->square + 1;
 	}
 
+	if (m->special >= ms_qpromo && m->special <= ms_npromo)
+	{
+		switch (m->special)
+		{
+			case ms_qpromo:
+				curboard->pieces [m->piece].type = pt_queen;
+			break;
+			case ms_rpromo:
+				curboard->pieces [m->piece].type = pt_rook;
+			break;
+			case ms_bpromo:
+				curboard->pieces [m->piece].type = pt_bishop;
+			break;
+			case ms_npromo:
+				curboard->pieces [m->piece].type = pt_knight;
+			break;
+		}
+	}
+
 	// taking a piece?
 	if (m->taken < 32)
 		curboard->pieces [m->taken].flags |= pf_taken;
@@ -104,6 +123,9 @@ void move_undo (move *m)
 		curboard->squares [m->square - 2].piece = rook;
 		rook->square = m->square - 2;
 	}
+
+	if (m->special >= ms_qpromo && m->special <= ms_npromo)
+		curboard->pieces [m->piece].type = pt_pawn;
 
 	// untake a piece
 	if (m->taken < 32) 
@@ -168,6 +190,25 @@ movelist *move_pawnmove (movelist *parent, uint8 piece)
 				it->m->square = sqnum + pawn2forward [side];
 				it->m->from = sqnum;
 				it->m->special = ms_enpas; // this piece is vulnerable to en passant
+			}
+		}
+
+		// moving onto the first rank of the opponent?
+		if ((sq + pawn2forward [side])->padding)
+		{
+			int j;
+			it->m->special = ms_qpromo;
+
+			// add the other promotions too
+			for (j = ms_rpromo; j <= ms_npromo; j++)
+			{
+				it->next = move_newnode (parent);
+				it = it->next;
+	
+				it->m->piece = piece;
+				it->m->square = sqnum + pawnforward [side];
+				it->m->from = sqnum;
+				it->m->special = j;
 			}
 		}
 	}

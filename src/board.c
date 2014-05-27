@@ -188,7 +188,7 @@ int main (void)
 
 	while ((curboard->pieces [15].flags & pf_taken) == 0 && (curboard->pieces [31].flags & pf_taken) == 0)
 	{
-		search (moveroot, 5, &best, -30000, 30000);
+		search (moveroot, 4, &best, -30000, 30000);
 
 		move_make (best);
 		board_print ();

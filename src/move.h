@@ -8,7 +8,11 @@ enum
 	ms_enpas,
 	ms_enpascap,
 	ms_kcast,
-	ms_qcast
+	ms_qcast,
+	ms_qpromo,
+	ms_rpromo,
+	ms_bpromo,
+	ms_npromo
 };
 
 typedef struct move_s
