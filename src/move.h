@@ -35,11 +35,11 @@ typedef struct movelist_s
 extern movelist *moveroot;
 
 void move_apply (move *m);
-void move_make (movelist *m);
+void move_make (move *m);
 void move_undo (move *m);
 movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from);
 void move_clearnodes (movelist *m);
-void move_genlist (movelist *start);
+movelist *move_genlist (void);
 
 movelist *move_pawnmove (uint8 piece);
 movelist *move_knightmove (uint8 piece);

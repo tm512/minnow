@@ -75,14 +75,11 @@ void move_apply (move *m)
 }
 
 // make a move, setting it as the current root for searching
-void move_make (movelist *m)
+void move_make (move *m)
 {
 	printf ("%u nodes stored (%fMiB)\n", numnodes,
 	        (float)(numnodes * (sizeof (movelist) + sizeof (move))) / 1048576.0f);
-	movelist *oldroot = moveroot;
-	move_apply (&m->m);
-	moveroot = m;
-	move_clearnodes (oldroot);
+	move_apply (m);
 	htop = 0;
 }
 
@@ -423,7 +420,7 @@ movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 	ret->m.from = from;
 	ret->m.special = 0;
 
-	ret->next = ret->child = NULL;
+	ret->next = NULL;
 
 	numnodes ++;
 
@@ -440,30 +437,20 @@ void move_clearnodes (movelist *m)
 		m->next = NULL;
 	}
 
-	// don't traverse down the new moveroot
-	if (m == moveroot)
-		return;
-
-	if (m->child)
-	{
-		move_clearnodes (m->child);
-		m->child = NULL;
-	}
-
 	free (m);
 
 	numnodes --;
 }
 
 // generate child nodes based on the current board
-void move_genlist (movelist *start)
+movelist *move_genlist (void)
 {
 	uint8 side = curboard->side * 16;
 	int i;
 	movelist *(*movefunc) (uint8 piece);
-	movelist *m, *it;
+	movelist *ret, *m, *it;
 
-	it = NULL;
+	ret = it = NULL;
 
 	for (i = side; i < side + 16; i++)
 	{
@@ -506,8 +493,8 @@ void move_genlist (movelist *start)
 		if (m)
 		{
 			// add the moves to the list
-			if (!start->child)
-				start->child = it = m;
+			if (!ret)
+				ret = it = m;
 			else
 				it->next = m;
 
@@ -518,4 +505,6 @@ void move_genlist (movelist *start)
 			}
 		}
 	}
+
+	return ret;
 }

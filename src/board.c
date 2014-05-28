@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "int.h"
 #include "board.h"
@@ -103,9 +104,8 @@ void board_initialize (void)
 
 uint8 board_squareattacked (uint8 sq)
 {
-	movelist *m = move_newnode (0, 0, 0, 0), *it;
-	move_genlist (m);
-	it = m->child;
+	movelist *m = move_genlist (), *it;
+	it = m;
 
 	while (it)
 	{
@@ -176,26 +176,35 @@ void board_print (void)
 	putchar ('\n');
 }
 
-int16 search (movelist *node, uint8 depth, movelist **best, int16 alpha, int16 beta);
-extern uint64 numnodes;
+void search (uint8 depth, move *best);
+int16 absearch (uint8 depth, move *best, int16 alpha, int16 beta);
+uint64 perft (uint8 depth);
+extern uint64 numnodes, enpas;
 int main (void)
 {
 	int i = 0;
-	movelist *best;
+	move best;
 	board_initialize ();
-	board_print ();
-	moveroot = move_newnode (0, 0, 0, 0);
-
+//	board_print ();
+/*
 	while ((curboard->pieces [15].flags & pf_taken) == 0 && (curboard->pieces [31].flags & pf_taken) == 0)
 	{
-		search (moveroot, 4, &best, -30000, 30000);
+		clock_t start = clock ();
+		absearch (5, &best, -30000, 30000);
+		printf ("search took %f seconds\n", (float)(clock () - start) / (float)CLOCKS_PER_SEC);
 
-		move_make (best);
+		move_make (&best);
 		board_print ();
 //		printf ("%u nodes stored (%fMiB)\n", numnodes,
 //		        (float)(numnodes * (sizeof (movelist) + sizeof (move))) / 1048576.0f);
 		getchar ();
 	}
+*/
+
+	
+	clock_t start = clock ();
+	uint64 nodes = perft (6);
+	printf ("perft: %u nodes, %f seconds, %u en passant\n", nodes, (float)(clock () - start) / (float)CLOCKS_PER_SEC, enpas);
 
 	return 0;
 }
