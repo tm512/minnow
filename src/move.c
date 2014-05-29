@@ -32,7 +32,8 @@ void move_apply (move *m)
 	// kingside castling
 	if (m->special == ms_kcast)
 	{
-		piece *rook = &curboard->pieces [curboard->side * 16 + 13];
+		curboard->cast [curboard->side] [1] = 0;
+		piece *rook = curboard->rooks [curboard->side] [1];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square - 1].piece = rook;
 		rook->square = m->square - 1;
@@ -41,7 +42,8 @@ void move_apply (move *m)
 	// queenside castling
 	if (m->special == ms_qcast)
 	{
-		piece *rook = &curboard->pieces [curboard->side * 16 + 12];
+		curboard->cast [curboard->side] [0] = 0;
+		piece *rook = curboard->rooks [curboard->side] [0];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square + 1].piece = rook;
 		rook->square = m->square + 1;
@@ -107,7 +109,8 @@ void move_undo (move *m)
 	// kingside castling
 	if (m->special == ms_kcast)
 	{
-		piece *rook = &curboard->pieces [curboard->side * 16 + 13];
+		curboard->cast [curboard->side] [1] = 1;
+		piece *rook = curboard->rooks [curboard->side] [1];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square + 1].piece = rook;
 		rook->square = m->square + 1;
@@ -116,7 +119,8 @@ void move_undo (move *m)
 	// queenside castling
 	if (m->special == ms_qcast)
 	{
-		piece *rook = &curboard->pieces [curboard->side * 16 + 12];
+		curboard->cast [curboard->side] [0] = 1;
+		piece *rook = curboard->rooks [curboard->side] [0];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square - 2].piece = rook;
 		rook->square = m->square - 2;
@@ -387,20 +391,24 @@ movelist *move_kingmove (uint8 piece)
 		// king side
 		// make sure squares are empty, and that the king isn't in check, passing through check, or going into check
 		if (!curboard->squares [p->square + 1].piece && !curboard->squares [p->square + 2].piece &&
-		    (curboard->pieces [13].flags & pf_moved) == 0 && !board_squareattacked (p->square) &&
-		    !board_squareattacked (p->square + 1) && !board_squareattacked (p->square + 2))
+		    curboard->cast [side] [1] && (curboard->rooks [side] [1]->flags & pf_moved) == 0 && 
+		    !board_squareattacked (p->square) && !board_squareattacked (p->square + 1) &&
+		    !board_squareattacked (p->square + 2))
 		{
+			//printf ("adding king side castle\n");
 			it->next = move_newnode (piece, 32, sqnum + 2, sqnum);
+			it = it->next;
 			it->m.special = ms_kcast;
 		}
 
 		// queen side
 		if (!curboard->squares [p->square - 1].piece && !curboard->squares [p->square - 2].piece &&
-		    !curboard->squares [p->square - 3].piece && (curboard->pieces [12].flags & pf_moved) == 0 && 
-		    !board_squareattacked (p->square) && !board_squareattacked (p->square - 1) &&
-		    !board_squareattacked (p->square - 2))
+		    !curboard->squares [p->square - 3].piece && curboard->cast [side] [0] && 
+		    (curboard->rooks [side] [0]->flags & pf_moved) == 0 && !board_squareattacked (p->square) &&
+		    !board_squareattacked (p->square - 1) && !board_squareattacked (p->square - 2))
 		{
 			it->next = move_newnode (piece, 32, sqnum - 2, sqnum);
+			it = it->next;
 			it->m.special = ms_qcast;
 		}
 
@@ -511,4 +519,10 @@ movelist *move_genlist (void)
 	}
 
 	return ret;
+}
+
+void move_print (move *m, char *c)
+{
+	snprintf (c, 6, "%c%i%c%i", 'a' + board_getfile (m->from), 1 + board_getrank (m->from),
+	          'a' + board_getfile (m->square), 1 + board_getrank (m->square));
 }

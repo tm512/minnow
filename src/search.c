@@ -73,8 +73,7 @@ void search (uint8 depth, move *best)
 	}
 }
 
-uint64 enpas = 0;
-uint64 perft (uint8 depth)
+uint64 perft (uint8 depth, uint8 start)
 {
 	uint64 count = 0;
 	movelist *it, *m;
@@ -88,12 +87,22 @@ uint64 perft (uint8 depth)
 	while (it)
 	{
 		move_apply (&it->m);
-		
-		if (!board_squareattacked (curboard->pieces [!curboard->side * 16 + 15].square))
-			count += perft (depth - 1);
 
-		if (it->m.special == ms_enpascap)
-			enpas ++;
+		if (it->m.special == ms_kcast)
+			printf ("castling\n");		
+
+		if (!board_squareattacked (curboard->kings [!curboard->side]->square))
+		{
+			uint64 add = perft (depth - 1, start);
+			count += add;
+
+			if (depth == start)
+			{
+				char notation [6];
+				move_print (&it->m, notation);
+				printf ("%s: %u nodes\n", notation, add);
+			}
+		}
 
 		move_undo (&it->m);
 		it = it->next;

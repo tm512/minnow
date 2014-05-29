@@ -45,6 +45,11 @@ typedef struct board_s
 	square squares [120];
 	piece pieces [32]; // 0-15 white, 16-32 black
 	enum { bs_white, bs_black } side; // side to play
+
+	uint8 cast [2] [2];
+
+	piece *rooks [2] [2];
+	piece *kings [2];
 } board;
 
 extern board *curboard;
