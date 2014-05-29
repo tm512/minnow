@@ -68,7 +68,11 @@ void move_apply (move *m)
 
 	// taking a piece?
 	if (m->taken < 32)
+	{
 		curboard->pieces [m->taken].flags |= pf_taken;
+		if (m->special == ms_enpascap)
+			curboard->squares [curboard->pieces [m->taken].square].piece = NULL;
+	}
 
 	// switch sides
 	curboard->side = !curboard->side;
