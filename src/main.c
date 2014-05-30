@@ -42,7 +42,10 @@ int main (void)
 			perft (atoi (&line [6]), atoi (&line [6]));
 
 		if (!strncmp (line, "search", 6))
-			search (atoi (&line [7]), NULL);
+		{
+			int16 score = absearch (atoi (&line [7]), NULL, -30000, 30000);
+			printf ("score: %i\n", score);
+		}
 
 		line [0] = 0;
 	}

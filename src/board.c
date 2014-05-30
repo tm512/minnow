@@ -26,6 +26,8 @@ inline uint8 board_getrank (uint8 square)
 	return square / 10 - 2;
 }
 
+piece dummy = { .flags = pf_moved };
+
 void board_initialize (const char *fen)
 {
 	int i;
@@ -42,8 +44,8 @@ void board_initialize (const char *fen)
 	// initialize castling stuff
 	curboard->cast [0] [0] = curboard->cast [0] [1] = 0;
 	curboard->cast [1] [0] = curboard->cast [1] [1] = 0;
-	curboard->rooks [0] [0] = curboard->rooks [0] [1] = NULL;
-	curboard->rooks [1] [0] = curboard->rooks [1] [1] = NULL;
+	curboard->rooks [0] [0] = curboard->rooks [0] [1] = &dummy;
+	curboard->rooks [1] [0] = curboard->rooks [1] [1] = &dummy;
 
 	// initialize squares
 	for (i = 0; i < 120; i++)
@@ -121,9 +123,9 @@ void board_initialize (const char *fen)
 
 			if (p == 'R')
 			{
-				if (!curboard->rooks [side] [0])
+				if (file == 0)
 					curboard->rooks [side] [0] = &curboard->pieces [idx [side]];
-				else
+				else if (file == 7)
 					curboard->rooks [side] [1] = &curboard->pieces [idx [side]];
 			}
 			

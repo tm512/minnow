@@ -8,7 +8,7 @@
 int16 absearch (uint8 depth, move *best, int16 alpha, int16 beta)
 {
 	movelist *m, *it, *prev = NULL;
-	move newbest = { .piece = 33 };
+	move newbest;
 	int16 score;
 
 	if (depth == 0)
@@ -23,11 +23,22 @@ int16 absearch (uint8 depth, move *best, int16 alpha, int16 beta)
 
 		score = -absearch (depth - 1, NULL, -beta, -alpha);
 
+		if (depth == 0)
+		{
+			char notation [6];
+			move_print (&it->m, notation);
+			printf ("%s: %i (a = %i, b = %i)\n", notation, score, alpha, beta);
+		}
+
 		#if 1
 		if (score >= beta)
 		{
+			if (best)
+				*best = it->m;
+
 			move_undo (&it->m);
 			move_clearnodes (m);
+
 			return beta;
 		}
 		#endif
@@ -83,7 +94,7 @@ uint64 perft (uint8 depth, uint8 start)
 	{
 		move_apply (&it->m);
 
-//		if (!board_squareattacked (curboard->kings [!curboard->side]->square))
+		if (!board_squareattacked (curboard->kings [!curboard->side]->square))
 		{
 			uint64 add = perft (depth - 1, start);
 			count += add;
