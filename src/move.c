@@ -8,7 +8,6 @@
 
 move history [128];
 uint8 htop = 0;
-movelist *moveroot = NULL;
 uint64 numnodes = 0;
 
 // applies a move to curboard
@@ -83,8 +82,6 @@ void move_apply (move *m)
 // make a move, setting it as the current root for searching
 void move_make (move *m)
 {
-	printf ("%u nodes stored (%fMiB)\n", numnodes,
-	        (float)(numnodes * (sizeof (movelist) + sizeof (move))) / 1048576.0f);
 	move_apply (m);
 	htop = 0;
 }
@@ -445,7 +442,7 @@ movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 void move_clearnodes (movelist *m)
 {
 	// don't free this one until we clean out all that it links to
-	if (m->next)
+	if (m && m->next)
 	{
 		move_clearnodes (m->next);
 		m->next = NULL;
@@ -527,4 +524,26 @@ void move_print (move *m, char *c)
 {
 	snprintf (c, 6, "%c%i%c%i", 'a' + board_getfile (m->from), 1 + board_getrank (m->from),
 	          'a' + board_getfile (m->square), 1 + board_getrank (m->square));
+}
+
+// decode algebraic notation into a move struct
+void move_decode (const char *c, move *m)
+{
+	// a1 is 21, each rank adds 10, and each file adds 1
+	m->from = 21 + (c [0] - 'a') + (c [1] - '1') * 10;
+	m->square = 21 + (c [2] - 'a') + (c [3] - '1') * 10;
+
+	m->piece = curboard->squares [m->from].piece - curboard->pieces;
+	m->taken = curboard->squares [m->square].piece - curboard->pieces;
+
+	// determine move special, if anything
+	if (curboard->squares [m->from].piece->type == pt_king)
+	{
+		// castling kingside?
+		if (c [0] == 'e' && c [2] == 'g')
+			m->special = ms_kcast;
+
+		if (c [0] == 'e' && c [2] == 'c')
+			m->special = ms_qcast;
+	}
 }

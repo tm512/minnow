@@ -41,6 +41,7 @@ movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from);
 void move_clearnodes (movelist *m);
 movelist *move_genlist (void);
 void move_print (move *m, char *c);
+void move_decode (const char *c, move *m);
 
 movelist *move_pawnmove (uint8 piece);
 movelist *move_knightmove (uint8 piece);

@@ -34,8 +34,10 @@ void board_initialize (const char *fen)
 	// track indexes into the piece array
 	uint8 idx [2] = { 0, 16 };
 
-	if (!curboard)
-		curboard = malloc (sizeof (board));
+	if (curboard)
+		free (curboard);
+
+	curboard = malloc (sizeof (board));
 
 	// initialize castling stuff
 	curboard->cast [0] [0] = curboard->cast [0] [1] = 0;
@@ -241,36 +243,4 @@ void board_print (void)
 	}
 
 	putchar ('\n');
-}
-
-const char *startfen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-extern uint64 numnodes;
-int main (void)
-{
-	int i = 0;
-	move best;
-	board_initialize (startfen);
-	board_print ();
-
-/*
-	while ((curboard->pieces [15].flags & pf_taken) == 0 && (curboard->pieces [31].flags & pf_taken) == 0)
-	{
-		clock_t start = clock ();
-		absearch (5, &best, -30000, 30000);
-		printf ("search took %f seconds\n", (float)(clock () - start) / (float)CLOCKS_PER_SEC);
-
-		move_make (&best);
-		board_print ();
-//		printf ("%u nodes stored (%fMiB)\n", numnodes,
-//		        (float)(numnodes * (sizeof (movelist) + sizeof (move))) / 1048576.0f);
-		getchar ();
-	}
-*/
-
-	clock_t start = clock ();
-	uint64 nodes = perft (5, 5);
-	printf ("perft: %u nodes, %f seconds\n", nodes, (float)(clock () - start) / (float)CLOCKS_PER_SEC);
-
-	return 0;
 }

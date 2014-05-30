@@ -8,7 +8,7 @@
 int16 absearch (uint8 depth, move *best, int16 alpha, int16 beta)
 {
 	movelist *m, *it, *prev = NULL;
-	move newbest;
+	move newbest = { .piece = 33 };
 	int16 score;
 
 	if (depth == 0)
@@ -21,15 +21,9 @@ int16 absearch (uint8 depth, move *best, int16 alpha, int16 beta)
 	{
 		move_apply (&it->m);
 
-//		puts ("apply:");
-//		board_print ();
-//		usleep (800000);
 		score = -absearch (depth - 1, NULL, -beta, -alpha);
-//		puts ("undo:");
-//		board_print ();
-//		usleep (800000);
 
-		#if 0
+		#if 1
 		if (score >= beta)
 		{
 			move_undo (&it->m);
@@ -39,7 +33,7 @@ int16 absearch (uint8 depth, move *best, int16 alpha, int16 beta)
 		#endif
 
 		// if we're considering this move, make sure it is legal
-		if (score > alpha && !board_squareattacked (curboard->pieces [!curboard->side * 16 + 15].square))
+		if (score > alpha && !board_squareattacked (curboard->kings [!curboard->side]->square))
 		{
 			alpha = score;
 			if (best)
@@ -66,9 +60,9 @@ void search (uint8 depth, move *best)
 	move newbest;
 	for (i = 1; i <= depth; i++)
 	{
-		newbest.piece = 32;
+		newbest.piece = 33;
 		absearch (i, &newbest, -30000, 30000);
-		if (newbest.piece != 32)
+		if (best && newbest.piece != 33)
 			*best = newbest;
 	}
 }
@@ -89,7 +83,7 @@ uint64 perft (uint8 depth, uint8 start)
 	{
 		move_apply (&it->m);
 
-		if (!board_squareattacked (curboard->kings [!curboard->side]->square))
+//		if (!board_squareattacked (curboard->kings [!curboard->side]->square))
 		{
 			uint64 add = perft (depth - 1, start);
 			count += add;

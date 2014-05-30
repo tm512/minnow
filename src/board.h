@@ -58,6 +58,8 @@ uint8 board_getsquare (int8 file, int8 rank);
 uint8 board_piecesquare (uint8 index);
 uint8 board_getfile (uint8 square);
 uint8 board_getrank (uint8 square);
+void board_initialize (const char *fen);
 uint8 board_squareattacked (uint8 sq);
+void board_print (void);
 
 #endif
