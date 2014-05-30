@@ -73,6 +73,7 @@ void search (uint8 depth, move *best)
 	}
 }
 
+uint64 castles = 0, promos = 0;
 uint64 perft (uint8 depth, uint8 start)
 {
 	uint64 count = 0;
@@ -88,9 +89,6 @@ uint64 perft (uint8 depth, uint8 start)
 	{
 		move_apply (&it->m);
 
-		if (it->m.special == ms_kcast)
-			printf ("castling\n");		
-
 		if (!board_squareattacked (curboard->kings [!curboard->side]->square))
 		{
 			uint64 add = perft (depth - 1, start);
@@ -100,8 +98,14 @@ uint64 perft (uint8 depth, uint8 start)
 			{
 				char notation [6];
 				move_print (&it->m, notation);
-				printf ("%s: %u nodes\n", notation, add);
+				//printf ("%s: %u nodes\n", notation, add);
+				printf ("%s %u\n", notation, add);
 			}
+
+			if (depth == 1 && (it->m.special == ms_kcast || it->m.special == ms_qcast))
+				castles ++;
+			if (depth == 1 && it->m.special >= ms_qpromo && it->m.special <= ms_npromo)
+				promos ++;
 		}
 
 		move_undo (&it->m);
@@ -109,6 +113,9 @@ uint64 perft (uint8 depth, uint8 start)
 	}
 
 	move_clearnodes (m);
+
+	if (depth == start)
+		printf ("%u castles, %u promotions\n", castles, promos);
 
 	return count;
 }

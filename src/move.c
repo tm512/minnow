@@ -103,14 +103,14 @@ void move_undo (move *m)
 	curboard->squares [m->from].piece = &curboard->pieces [m->piece];
 	curboard->pieces [m->piece].square = m->from;
 
-	if (m->special == ms_firstmove || m->special == ms_enpas)
+	if (m->special == ms_firstmove || m->special == ms_enpas || m->special == ms_kcast || m->special == ms_qcast)
 		curboard->pieces [m->piece].flags &= ~pf_moved;
 
 	// kingside castling
 	if (m->special == ms_kcast)
 	{
-		curboard->cast [curboard->side] [1] = 1;
-		piece *rook = curboard->rooks [curboard->side] [1];
+		curboard->cast [!curboard->side] [1] = 1;
+		piece *rook = curboard->rooks [!curboard->side] [1];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square + 1].piece = rook;
 		rook->square = m->square + 1;
@@ -119,8 +119,8 @@ void move_undo (move *m)
 	// queenside castling
 	if (m->special == ms_qcast)
 	{
-		curboard->cast [curboard->side] [0] = 1;
-		piece *rook = curboard->rooks [curboard->side] [0];
+		curboard->cast [!curboard->side] [0] = 1;
+		piece *rook = curboard->rooks [!curboard->side] [0];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square - 2].piece = rook;
 		rook->square = m->square - 2;
@@ -155,6 +155,7 @@ static inline void setside (uint8 piece, uint8 *side, uint8 *notside)
 	}
 }
 
+extern uint8 attackhack;
 static int8 pawnforward [2] = { 10, -10 };
 static int8 pawn2forward [2] = { 20, -20 };
 static int8 pawntake [2][4] = { { 9, 11, -1, 1 }, { -9, -11, 1, -1 } };
@@ -172,7 +173,7 @@ movelist *move_pawnmove (uint8 piece)
 	setside (piece, &side, &notside);
 
 	// forward move possible?
-	if (!(sq + pawnforward [side])->padding && !(sq + pawnforward [side])->piece)
+	if (!attackhack && !(sq + pawnforward [side])->padding && !(sq + pawnforward [side])->piece)
 	{
 		ret = it = move_newnode (piece, 32, sqnum + pawnforward [side], sqnum);
 
@@ -215,18 +216,19 @@ movelist *move_pawnmove (uint8 piece)
 		if (i > 1 && (sq + pawntake [side] [i])->piece - curboard->pieces != history [htop].piece)
 			continue; // this piece isn't vulnerable to en passant
 
-		if ((sq + pawntake [side] [i])->piece && (sq + pawntake [side] [i])->piece->side == notside
-		    && ((sq + pawntake [side] [i])->piece->flags & pf_taken) == 0)
+		if (attackhack || ((sq + pawntake [side] [i])->piece && (sq + pawntake [side] [i])->piece->side == notside
+		    && ((sq + pawntake [side] [i])->piece->flags & pf_taken) == 0))
 		{
 			if (!ret)
-				ret = it = move_newnode (piece, (sq + pawntake [side] [i])->piece - curboard->pieces,
-				                         sqnum + pawntake [side] [i > 1 ? i - 2 : i], sqnum);
+				ret = it = move_newnode (piece, 32, sqnum + pawntake [side] [i > 1 ? i - 2 : i], sqnum);
 			else
 			{
-				it->next = move_newnode (piece, (sq + pawntake [side] [i])->piece - curboard->pieces,
-				                         sqnum + pawntake [side] [i > 1 ? i - 2 : i], sqnum);
+				it->next = move_newnode (piece, 32, sqnum + pawntake [side] [i > 1 ? i - 2 : i], sqnum);
 				it = it->next;
 			}
+
+			if ((sq + pawntake [side] [i])->piece)
+				it->m.taken = (sq + pawntake [side] [i])->piece - curboard->pieces;
 
 			if (i > 1)
 				it->m.special = ms_enpascap;
@@ -391,7 +393,7 @@ movelist *move_kingmove (uint8 piece)
 		// king side
 		// make sure squares are empty, and that the king isn't in check, passing through check, or going into check
 		if (!curboard->squares [p->square + 1].piece && !curboard->squares [p->square + 2].piece &&
-		    curboard->cast [side] [1] && (curboard->rooks [side] [1]->flags & pf_moved) == 0 && 
+		    curboard->cast [side] [1] && (curboard->rooks [side] [1]->flags & (pf_moved | pf_taken)) == 0 && 
 		    !board_squareattacked (p->square) && !board_squareattacked (p->square + 1) &&
 		    !board_squareattacked (p->square + 2))
 		{
@@ -404,7 +406,7 @@ movelist *move_kingmove (uint8 piece)
 		// queen side
 		if (!curboard->squares [p->square - 1].piece && !curboard->squares [p->square - 2].piece &&
 		    !curboard->squares [p->square - 3].piece && curboard->cast [side] [0] && 
-		    (curboard->rooks [side] [0]->flags & pf_moved) == 0 && !board_squareattacked (p->square) &&
+		    (curboard->rooks [side] [0]->flags & (pf_moved | pf_taken)) == 0 && !board_squareattacked (p->square) &&
 		    !board_squareattacked (p->square - 1) && !board_squareattacked (p->square - 2))
 		{
 			it->next = move_newnode (piece, 32, sqnum - 2, sqnum);
