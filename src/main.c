@@ -50,8 +50,8 @@ int main (void)
 		if (!strncmp (line, "search", 6))
 		{
 			clock_t start = clock ();
-			search (atoi (&line [7]), NULL);
-			printf ("score: %i (search took %f seconds, %u leaf nodes)\n", 1243214, (float)(clock () - start) / CLOCKS_PER_SEC, leafnodes);
+			int16 score = search (atoi (&line [7]), NULL);
+			printf ("score: %i (search took %f seconds, %u leaf nodes)\n", score, (float)(clock () - start) / CLOCKS_PER_SEC, leafnodes);
 			leafnodes = 0;
 		}
 

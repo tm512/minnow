@@ -45,6 +45,10 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		if (depth != start && score >= beta)
 		{
 			move_undo (&it->m);
+
+			if (m == &pvm)
+				m = m->next;
+
 			move_clearnodes (m);
 
 			return beta;
@@ -77,11 +81,15 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 int16 search (uint8 depth, move *best)
 {
 	int i, j;
+	int16 ret;
 	pvlist oldpv = { 0 };
+
+	leafnodes = 0;
+
 	for (i = 1; i <= depth; i++)
 	{
 		pvlist pv;
-		absearch (i, i, &pv, &oldpv, -30000, 30000);
+		ret = absearch (i, i, &pv, &oldpv, -30000, 30000);
 		oldpv = pv;
 	}
 
@@ -94,6 +102,8 @@ int16 search (uint8 depth, move *best)
 
 	if (best)
 		*best = oldpv.moves [0];
+
+	return ret;
 }
 
 uint64 castles = 0, promos = 0;
