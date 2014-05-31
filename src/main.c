@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "int.h"
 #include "uci.h"
@@ -9,6 +10,7 @@
 #include "search.h"
 
 const char *startpos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+extern uint64 leafnodes;
 
 int main (void)
 {
@@ -43,8 +45,10 @@ int main (void)
 
 		if (!strncmp (line, "search", 6))
 		{
+			clock_t start = clock ();
 			int16 score = absearch (atoi (&line [7]), NULL, -30000, 30000);
-			printf ("score: %i\n", score);
+			printf ("score: %i (search took %f seconds, %u leaf nodes)\n", score, (float)(clock () - start) / CLOCKS_PER_SEC, leafnodes);
+			leafnodes = 0;
 		}
 
 		line [0] = 0;

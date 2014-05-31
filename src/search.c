@@ -5,6 +5,7 @@
 #include "move.h"
 #include "eval.h"
 
+uint64 leafnodes = 0;
 int16 absearch (uint8 depth, move *best, int16 alpha, int16 beta)
 {
 	movelist *m, *it, *prev = NULL;
@@ -12,7 +13,10 @@ int16 absearch (uint8 depth, move *best, int16 alpha, int16 beta)
 	int16 score;
 
 	if (depth == 0)
+	{
+		leafnodes ++;
 		return evaluate ();
+	}
 
 	m = move_genlist ();
 	it = m;
