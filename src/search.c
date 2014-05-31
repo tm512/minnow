@@ -1,45 +1,49 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "int.h"
 #include "board.h"
 #include "move.h"
 #include "eval.h"
+#include "search.h"
 
 uint64 leafnodes = 0;
-int16 absearch (uint8 depth, move *best, int16 alpha, int16 beta)
+int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha, int16 beta)
 {
-	movelist *m, *it, *prev = NULL;
-	move newbest;
+	movelist *m, *it, pvm;
+	pvlist stackpv;
 	int16 score;
 
 	if (depth == 0)
 	{
 		leafnodes ++;
+		pv->nodes = 0;
 		return evaluate ();
 	}
 
 	m = move_genlist ();
+
+	if (oldpv && depth > 1)
+	{
+		pvm.m = oldpv->moves [start - depth];
+		pvm.next = m;
+		m = &pvm;
+	}
+
 	it = m;
 
 	while (it)
 	{
 		move_apply (&it->m);
 
-		score = -absearch (depth - 1, NULL, -beta, -alpha);
-
-		if (depth == 0)
-		{
-			char notation [6];
-			move_print (&it->m, notation);
-			printf ("%s: %i (a = %i, b = %i)\n", notation, score, alpha, beta);
-		}
+		if (it == &pvm)
+			score = -absearch (depth - 1, start, &stackpv, oldpv, -beta, -alpha);
+		else
+			score = -absearch (depth - 1, start, &stackpv, NULL, -beta, -alpha);
 
 		#if 1
-		if (score >= beta)
+		if (depth != start && score >= beta)
 		{
-			if (best)
-				*best = it->m;
-
 			move_undo (&it->m);
 			move_clearnodes (m);
 
@@ -51,35 +55,45 @@ int16 absearch (uint8 depth, move *best, int16 alpha, int16 beta)
 		if (score > alpha && !board_squareattacked (curboard->kings [!curboard->side]->square))
 		{
 			alpha = score;
-			if (best)
-				newbest = it->m;
+
+			pv->moves [0] = it->m;
+			memcpy (pv->moves + 1, stackpv.moves, stackpv.nodes * sizeof (move));
+			pv->nodes = stackpv.nodes + 1;
 		}
 
 		move_undo (&it->m);
-		prev = it;
 		it = it->next;
 	}
 
-	move_clearnodes (m);
+	if (m == &pvm)
+		m = m->next;
 
-	if (best)
-		*best = newbest;
+	move_clearnodes (m);
 
 	return alpha;
 }
 
 // iterative deepening
-void search (uint8 depth, move *best)
+int16 search (uint8 depth, move *best)
 {
-	int i;
-	move newbest;
+	int i, j;
+	pvlist oldpv = { 0 };
 	for (i = 1; i <= depth; i++)
 	{
-		newbest.piece = 33;
-		absearch (i, &newbest, -30000, 30000);
-		if (best && newbest.piece != 33)
-			*best = newbest;
+		pvlist pv;
+		absearch (i, i, &pv, &oldpv, -30000, 30000);
+		oldpv = pv;
 	}
+
+	for (j = 0; j < oldpv.nodes; j++)
+	{
+		char notation [6];
+		move_print (&oldpv.moves [j], notation);
+//		printf ("pv (%u): %s\n", j, notation);
+	}
+
+	if (best)
+		*best = oldpv.moves [0];
 }
 
 uint64 castles = 0, promos = 0;

@@ -62,7 +62,7 @@ int uci_main (void)
 		{
 			move best;
 			char c [6];
-			absearch (5, &best, -30000, 30000);
+			search (5, &best);
 			move_print (&best, c);
 			printf ("bestmove %s\n", c);
 		}

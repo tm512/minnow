@@ -41,13 +41,17 @@ int main (void)
 		}
 
 		if (!strncmp (line, "perft", 5))
-			perft (atoi (&line [6]), atoi (&line [6]));
+		{
+			clock_t start = clock ();
+			uint64 count = perft (atoi (&line [6]), atoi (&line [6]));
+			printf ("perft: %i (took %f seconds)\n", count, (float)(clock () - start) / CLOCKS_PER_SEC);
+		}
 
 		if (!strncmp (line, "search", 6))
 		{
 			clock_t start = clock ();
-			int16 score = absearch (atoi (&line [7]), NULL, -30000, 30000);
-			printf ("score: %i (search took %f seconds, %u leaf nodes)\n", score, (float)(clock () - start) / CLOCKS_PER_SEC, leafnodes);
+			search (atoi (&line [7]), NULL);
+			printf ("score: %i (search took %f seconds, %u leaf nodes)\n", 1243214, (float)(clock () - start) / CLOCKS_PER_SEC, leafnodes);
 			leafnodes = 0;
 		}
 
