@@ -12,7 +12,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 {
 	movelist *m, *it, pvm;
 	pvlist stackpv;
-	int16 score;
+	int16 score, oldalpha = alpha;
 
 	if (depth == 0)
 	{
@@ -35,6 +35,15 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 	while (it)
 	{
 		move_apply (&it->m);
+
+		#if 0
+		if (depth == start)
+		{
+			char notation [6];
+			move_print (&it->m, notation);
+			printf ("%s\n", notation);
+		}
+		#endif
 
 		if (it == &pvm)
 			score = -absearch (depth - 1, start, &stackpv, oldpv, -beta, -alpha);
@@ -73,6 +82,9 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		m = m->next;
 
 	move_clearnodes (m);
+
+	if (alpha == oldalpha && board_squareattacked (curboard->kings [curboard->side]->square))
+		return -15000 - depth; // subtract the depth so that sooner checkmates score higher
 
 	return alpha;
 }

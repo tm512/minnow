@@ -10,7 +10,6 @@ extern const char *startpos;
 int uci_main (void)
 {
 	char line [8192];
-//	FILE *log = fopen ("/tmp/minnow.log", "w");
 
 	printf ("id name minnow " GIT_VERSION "\n");
 	printf ("id author tm512\n");
@@ -20,7 +19,6 @@ int uci_main (void)
 	while (1)
 	{
 		fgets (line, 8192, stdin);
-//		fprintf (log, "%s\n", line);
 
 		if (!strncmp (line, "isready", 7))
 			printf ("readyok\n");
@@ -62,7 +60,7 @@ int uci_main (void)
 		{
 			move best;
 			char c [6];
-			search (5, &best);
+			search (6, &best);
 			move_print (&best, c);
 			printf ("bestmove %s\n", c);
 		}
