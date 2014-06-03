@@ -10,7 +10,7 @@ OUT = chess
 .PHONY: clean
 default: debug
 
-release: CFLAGS_ += -O2 -g0
+release: CFLAGS_ += -O2 -g3
 release: $(OUT)
 
 debug: CFLAGS_ += -O0 -g3

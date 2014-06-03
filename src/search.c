@@ -11,7 +11,7 @@ uint64 leafnodes = 0;
 int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha, int16 beta)
 {
 	movelist *m, *it, pvm;
-	pvlist stackpv;
+	pvlist stackpv = { 0 };
 	int16 score, oldalpha = alpha;
 
 	if (depth == 0)

@@ -64,6 +64,7 @@ void board_initialize (const char *fen)
 		curboard->pieces [i].type = pt_none;
 		curboard->pieces [i].side = (i > 15);
 		curboard->pieces [i].flags = 0;
+		curboard->pieces [i].square = 0;
 	}
 
 	// start walking through the string

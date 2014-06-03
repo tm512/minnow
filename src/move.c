@@ -6,6 +6,8 @@
 #include "board.h"
 #include "move.h"
 
+static const uint32 maxnodes = 8192;
+
 move history [128];
 uint8 htop = 0;
 uint64 numnodes = 0;
@@ -424,11 +426,13 @@ void move_initnodes (void)
 {
 	int i;
 
-	nodes = malloc (5000 * sizeof (movelist));
-	for (i = 0; i < 5000; i++)
+	nodes = malloc (maxnodes * sizeof (movelist));
+	memset (nodes, 0, maxnodes * sizeof (movelist));
+	for (i = 0; i < maxnodes; i++)
 		nodes [i].next = &nodes [i + 1];
 }
 
+uint64 calls = 0;
 movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 {
 	movelist *ret = nodes;
@@ -447,14 +451,14 @@ movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 	return ret;
 }
 
-// recursively clean out all non-chosen nodes
+// recursively clean a list of moves
 void move_clearnodes (movelist *m)
 {
 	// don't free this one until we clean out all that it links to
 	if (m && m->next)
 	{
 		move_clearnodes (m->next);
-		m->next = NULL;
+	//	m->next = NULL;
 	}
 
 	m->next = nodes;
