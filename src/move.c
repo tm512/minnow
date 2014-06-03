@@ -418,12 +418,21 @@ movelist *move_kingmove (uint8 piece)
 	return ret;
 }
 
+movelist *nodes = NULL;
+
+void move_initnodes (void)
+{
+	int i;
+
+	nodes = malloc (5000 * sizeof (movelist));
+	for (i = 0; i < 5000; i++)
+		nodes [i].next = &nodes [i + 1];
+}
+
 movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 {
-	movelist *ret = malloc (sizeof (movelist));
-
-	if (!ret)
-		return NULL;
+	movelist *ret = nodes;
+	nodes = nodes->next;
 
 	ret->m.piece = piece;
 	ret->m.taken = taken;
@@ -448,7 +457,8 @@ void move_clearnodes (movelist *m)
 		m->next = NULL;
 	}
 
-	free (m);
+	m->next = nodes;
+	nodes = m;
 
 	numnodes --;
 }

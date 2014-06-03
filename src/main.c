@@ -19,6 +19,8 @@ int main (void)
 	printf ("minnow " GIT_VERSION "\n");
 	printf ("[c] 2014 Kyle Davis (tm512)\n\n");
 
+	move_initnodes ();
+
 	while (1)
 	{
 		printf ("> ");
