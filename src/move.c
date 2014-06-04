@@ -482,7 +482,6 @@ movelist *move_genlist (void)
 {
 	uint8 side = curboard->side * 16;
 	int i;
-	movelist *(*movefunc) (uint8 piece);
 	movelist *ret, *m, *it;
 
 	ret = it = NULL;
@@ -490,40 +489,11 @@ movelist *move_genlist (void)
 	for (i = side; i < side + 16; i++)
 	{
 		// taken pieces can't move
-		if (curboard->pieces [i].flags & pf_taken)
+		if (curboard->pieces [i].flags & pf_taken || curboard->pieces [i].type == pt_none)
 			continue;
-
-		// set our move function depending on the piece type
-		switch (curboard->pieces [i].type)
-		{
-			case pt_pawn:
-				movefunc = move_pawnmove;
-			break;
-			case pt_knight:
-				movefunc = move_knightmove;
-			break;
-			case pt_bishop:
-				movefunc = move_bishopmove;
-			break;
-			case pt_rook:
-				movefunc = move_rookmove;
-			break;
-			case pt_queen:
-				movefunc = move_queenmove;
-			break;
-			case pt_king:
-				movefunc = move_kingmove;
-			break;
-			default:
-				movefunc = NULL;
-			break;
-		}
 
 		// generate all moves from this piece
-		if (movefunc)
-			m = movefunc (i);
-		else	
-			continue;
+		m = curboard->pieces [i].movefunc (i);
 
 		if (m)
 		{

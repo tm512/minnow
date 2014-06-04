@@ -97,21 +97,27 @@ void board_initialize (const char *fen)
 			{
 				case 'P':
 					curboard->pieces [idx [side]].type = pt_pawn;
+					curboard->pieces [idx [side]].movefunc = move_pawnmove;
 				break;
 				case 'N':
 					curboard->pieces [idx [side]].type = pt_knight;
+					curboard->pieces [idx [side]].movefunc = move_knightmove;
 				break;
 				case 'B':
 					curboard->pieces [idx [side]].type = pt_bishop;
+					curboard->pieces [idx [side]].movefunc = move_bishopmove;
 				break;
 				case 'R':
 					curboard->pieces [idx [side]].type = pt_rook;
+					curboard->pieces [idx [side]].movefunc = move_rookmove;
 				break;
 				case 'Q':
 					curboard->pieces [idx [side]].type = pt_queen;
+					curboard->pieces [idx [side]].movefunc = move_queenmove;
 				break;
 				case 'K':
 					curboard->pieces [idx [side]].type = pt_king;
+					curboard->pieces [idx [side]].movefunc = move_kingmove;
 				break;
 			}
 

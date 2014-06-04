@@ -23,6 +23,7 @@ typedef struct square_s
 	uint8 padding;
 } square;
 
+struct movelist_s;
 typedef struct piece_s
 {
 	uint8 square;
@@ -38,6 +39,7 @@ typedef struct piece_s
 		pt_queen,
 		pt_king
 	} type;
+	struct movelist_s *(*movefunc) (uint8 piece);
 } piece;
 
 typedef struct board_s
