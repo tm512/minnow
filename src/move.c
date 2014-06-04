@@ -5,6 +5,7 @@
 #include "int.h"
 #include "board.h"
 #include "move.h"
+#include "values.h"
 
 static const uint32 maxnodes = 8192;
 
@@ -20,10 +21,12 @@ void move_apply (move *m)
 
 	// unset piece on the square we're moving from
 	curboard->squares [m->from].piece = NULL;
+	curboard->score [curboard->side] -= posvals [curboard->side] [curboard->pieces [m->piece].type] [m->from];
 
 	// set our piece on the new square
 	curboard->squares [m->square].piece = &curboard->pieces [m->piece];
 	curboard->pieces [m->piece].square = m->square;
+	curboard->score [curboard->side] += posvals [curboard->side] [curboard->pieces [m->piece].type] [m->square];
 
 	if (m->special == ms_null && (curboard->pieces [m->piece].flags & pf_moved) == 0)
 		m->special = ms_firstmove;
@@ -80,6 +83,9 @@ void move_apply (move *m)
 		curboard->pieces [m->taken].flags |= pf_taken;
 		if (m->special == ms_enpascap)
 			curboard->squares [curboard->pieces [m->taken].square].piece = NULL;
+
+		curboard->score [!curboard->side] -= piecevals [curboard->pieces [m->taken].type];
+		curboard->score [!curboard->side] -= posvals [!curboard->side] [curboard->pieces [m->taken].type] [curboard->pieces [m->taken].square];
 	}
 
 	// switch sides
@@ -102,10 +108,12 @@ void move_undo (move *m)
 
 	// unset piece on the square we're moving from
 	curboard->squares [m->square].piece = NULL;
+	curboard->score [!curboard->side] -= posvals [!curboard->side] [curboard->pieces [m->piece].type] [m->square];
 
 	// set our piece on the new square
 	curboard->squares [m->from].piece = &curboard->pieces [m->piece];
 	curboard->pieces [m->piece].square = m->from;
+	curboard->score [!curboard->side] += posvals [!curboard->side] [curboard->pieces [m->piece].type] [m->from];
 
 	if (m->special == ms_firstmove || m->special == ms_enpas || m->special == ms_kcast || m->special == ms_qcast)
 		curboard->pieces [m->piece].flags &= ~pf_moved;
@@ -143,6 +151,8 @@ void move_undo (move *m)
 	{
 		curboard->pieces [m->taken].flags &= ~pf_taken;
 		curboard->squares [curboard->pieces [m->taken].square].piece = &curboard->pieces [m->taken];
+		curboard->score [curboard->side] += piecevals [curboard->pieces [m->taken].type];
+		curboard->score [curboard->side] += posvals [curboard->side] [curboard->pieces [m->taken].type] [curboard->pieces [m->taken].square];
 	}
 
 	// switch sides

@@ -1,4 +1,8 @@
-static int16 posvals [2] [7] [120] = 
+#include "int.h"
+
+int16 piecevals [7] = { 0, 100, 300, 310, 500, 900, 10000 };
+
+int16 posvals [2] [7] [120] = 
 {
 	// white:
 	{

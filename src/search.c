@@ -100,7 +100,7 @@ int16 search (uint8 depth, move *best)
 
 	for (i = 1; i <= depth; i++)
 	{
-		pvlist pv;
+		pvlist pv = { 0 };
 		ret = absearch (i, i, &pv, &oldpv, -30000, 30000);
 		oldpv = pv;
 	}

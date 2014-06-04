@@ -6,6 +6,7 @@
 #include "board.h"
 #include "move.h"
 #include "search.h"
+#include "values.h"
 
 board *curboard = NULL;
 
@@ -47,6 +48,8 @@ void board_initialize (const char *fen)
 	curboard->rooks [1] [0] = curboard->rooks [1] [1] = &dummy;
 
 	curboard->enpas = NULL;
+
+	curboard->score [0] = curboard->score [1] = 0;
 
 	// initialize squares
 	for (i = 0; i < 120; i++)
@@ -136,7 +139,10 @@ void board_initialize (const char *fen)
 				else if (file == 7)
 					curboard->rooks [side] [1] = &curboard->pieces [idx [side]];
 			}
-			
+
+			// add to our score
+			curboard->score [side] += piecevals [curboard->pieces [idx [side]].type];
+			curboard->score [side] += posvals [side] [curboard->pieces [idx [side]].type] [rank + file];
 
 			curboard->pieces [idx [side]].square = rank + file;
 			curboard->squares [rank + file].piece = &curboard->pieces [idx [side]];

@@ -53,6 +53,8 @@ typedef struct board_s
 	piece *rooks [2] [2];
 	piece *kings [2];
 	piece *enpas;
+
+	int16 score [2];
 } board;
 
 extern board *curboard;
