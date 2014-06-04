@@ -50,6 +50,7 @@ typedef struct board_s
 
 	piece *rooks [2] [2];
 	piece *kings [2];
+	piece *enpas;
 } board;
 
 extern board *curboard;

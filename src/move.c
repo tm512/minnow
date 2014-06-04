@@ -50,6 +50,11 @@ void move_apply (move *m)
 		rook->square = m->square + 1;
 	}
 
+	if (m->special == ms_enpas)
+		curboard->enpas = &curboard->pieces [m->piece];
+	else
+		curboard->enpas = NULL;
+
 	if (m->special >= ms_qpromo && m->special <= ms_npromo)
 	{
 		switch (m->special)
@@ -124,6 +129,11 @@ void move_undo (move *m)
 		curboard->squares [m->square - 2].piece = rook;
 		rook->square = m->square - 2;
 	}
+
+	if (history [htop].special == ms_enpas)
+		curboard->enpas = &curboard->pieces [history [htop].piece];
+	else
+		curboard->enpas = NULL;
 
 	if (m->special >= ms_qpromo && m->special <= ms_npromo)
 		curboard->pieces [m->piece].type = pt_pawn;
@@ -209,10 +219,10 @@ movelist *move_pawnmove (uint8 piece)
 	for (i = 0; i < 4; i++)
 	{
 		// break if we shouldn't consider en passant moves
-		if (i > 1 && (!htop || history [htop].special != ms_enpas))
+		if (i > 1 && !curboard->enpas)
 			break;
 
-		if (i > 1 && (sq + pawntake [side] [i])->piece - curboard->pieces != history [htop].piece)
+		if (i > 1 && (sq + pawntake [side] [i])->piece != curboard->enpas)
 			continue; // this piece isn't vulnerable to en passant
 
 		if (attackhack || ((sq + pawntake [side] [i])->piece && (sq + pawntake [side] [i])->piece->side == notside
@@ -559,5 +569,39 @@ void move_decode (const char *c, move *m)
 
 		if (c [0] == 'e' && c [2] == 'c')
 			m->special = ms_qcast;
+	}
+
+	if (curboard->squares [m->from].piece->type == pt_pawn)
+	{
+		if ((c [1] == '2' && c [3] == '4') || (c [1] == '7' && c [3] == '5'))
+			m->special = ms_enpas;
+
+		if (c [0] != c [2] && !curboard->squares [m->square].piece)
+		{
+			m->special = ms_enpascap;
+			if (!curboard->side)
+				m->taken = curboard->squares [m->square - 10].piece - curboard->pieces;
+			else
+				m->taken = curboard->squares [m->square + 10].piece - curboard->pieces;
+		}
+
+		if (c [4] != ' ' && c [4] != '\0')
+		{
+			switch (c [4])
+			{
+				case 'q':
+					m->special = ms_qpromo;
+				break;
+				case 'r':
+					m->special = ms_rpromo;
+				break;
+				case 'b':
+					m->special = ms_bpromo;
+				break;
+				case 'n':
+					m->special = ms_npromo;
+				break;
+			}
+		}
 	}
 }

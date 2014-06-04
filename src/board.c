@@ -46,6 +46,8 @@ void board_initialize (const char *fen)
 	curboard->rooks [0] [0] = curboard->rooks [0] [1] = &dummy;
 	curboard->rooks [1] [0] = curboard->rooks [1] [1] = &dummy;
 
+	curboard->enpas = NULL;
+
 	// initialize squares
 	for (i = 0; i < 120; i++)
 	{
@@ -164,6 +166,22 @@ void board_initialize (const char *fen)
 		}
 
 		it ++;
+	}
+
+	it ++;
+
+	if (*it != '-') // en passant is active
+	{
+		uint8 epfile = it [0] - 'a';
+		uint8 eprank = it [1] - '1';
+
+		// the rank will be off by one, since it specifies the landing square, but we don't care about that yet
+		if (curboard->side)
+			eprank ++; // white is vulnerable to en passant
+		else
+			eprank --;
+
+		curboard->enpas = curboard->squares [21 + epfile + eprank * 10].piece;
 	}
 }
 
