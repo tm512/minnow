@@ -474,8 +474,11 @@ movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 // recursively clean a list of moves
 void move_clearnodes (movelist *m)
 {
+	if (!m)
+		return;
+
 	// don't free this one until we clean out all that it links to
-	if (m && m->next)
+	if (m->next)
 	{
 		move_clearnodes (m->next);
 	//	m->next = NULL;
