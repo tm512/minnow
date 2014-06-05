@@ -86,8 +86,17 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 
 	move_clearnodes (m);
 
-	if (alpha == oldalpha && board_squareattacked (curboard->kings [curboard->side]->square))
-		return -15000 - depth; // subtract the depth so that sooner checkmates score higher
+	if (alpha == oldalpha)
+	{
+		curboard->side = !curboard->side;
+
+		if (board_squareattacked (curboard->kings [!curboard->side]->square))
+			alpha = -15000 - depth; // subtract the depth so that sooner checkmates score higher
+//		else
+//			alpha = 0;
+
+		curboard->side = !curboard->side;
+	}
 
 	return alpha;
 }
@@ -105,6 +114,7 @@ int16 search (uint8 depth, move *best)
 	{
 		pvlist pv = { 0 };
 		ret = absearch (i, i, &pv, &oldpv, -30000, 30000);
+		printf ("%i\n", ret);
 		oldpv = pv;
 	}
 

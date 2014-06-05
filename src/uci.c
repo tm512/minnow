@@ -44,7 +44,6 @@ int uci_main (void)
 					move m = { 0 };
 					move_decode (posline, &m);
 					move_make (&m);
-					// board_print ();
 
 					posline = strstr (posline, " ");
 
