@@ -26,7 +26,6 @@ void move_apply (move *m)
 	// set our piece on the new square
 	curboard->squares [m->square].piece = &curboard->pieces [m->piece];
 	curboard->pieces [m->piece].square = m->square;
-	curboard->score [curboard->side] += posvals [curboard->side] [curboard->pieces [m->piece].type] [m->square];
 
 	if (m->special == ms_null && (curboard->pieces [m->piece].flags & pf_moved) == 0)
 		m->special = ms_firstmove;
@@ -38,9 +37,11 @@ void move_apply (move *m)
 	{
 		curboard->cast [curboard->side] [1] = 0;
 		piece *rook = curboard->rooks [curboard->side] [1];
+		curboard->score [curboard->side] -= posvals [curboard->side] [pt_rook] [rook->square];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square - 1].piece = rook;
 		rook->square = m->square - 1;
+		curboard->score [curboard->side] += posvals [curboard->side] [pt_rook] [rook->square];
 	}
 
 	// queenside castling
@@ -48,9 +49,11 @@ void move_apply (move *m)
 	{
 		curboard->cast [curboard->side] [0] = 0;
 		piece *rook = curboard->rooks [curboard->side] [0];
+		curboard->score [curboard->side] -= posvals [curboard->side] [pt_rook] [rook->square];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square + 1].piece = rook;
 		rook->square = m->square + 1;
+		curboard->score [curboard->side] += posvals [curboard->side] [pt_rook] [rook->square];
 	}
 
 	if (m->special == ms_enpas)
@@ -75,7 +78,11 @@ void move_apply (move *m)
 				curboard->pieces [m->piece].type = pt_knight;
 			break;
 		}
+
+		curboard->score [curboard->side] += piecevals [curboard->pieces [m->piece].type] - piecevals [pt_pawn];
 	}
+
+	curboard->score [curboard->side] += posvals [curboard->side] [curboard->pieces [m->piece].type] [m->square];
 
 	// taking a piece?
 	if (m->taken < 32)
@@ -113,7 +120,6 @@ void move_undo (move *m)
 	// set our piece on the new square
 	curboard->squares [m->from].piece = &curboard->pieces [m->piece];
 	curboard->pieces [m->piece].square = m->from;
-	curboard->score [!curboard->side] += posvals [!curboard->side] [curboard->pieces [m->piece].type] [m->from];
 
 	if (m->special == ms_firstmove || m->special == ms_enpas || m->special == ms_kcast || m->special == ms_qcast)
 		curboard->pieces [m->piece].flags &= ~pf_moved;
@@ -123,9 +129,11 @@ void move_undo (move *m)
 	{
 		curboard->cast [!curboard->side] [1] = 1;
 		piece *rook = curboard->rooks [!curboard->side] [1];
+		curboard->score [!curboard->side] -= posvals [!curboard->side] [pt_rook] [rook->square];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square + 1].piece = rook;
 		rook->square = m->square + 1;
+		curboard->score [!curboard->side] += posvals [!curboard->side] [pt_rook] [rook->square];
 	}
 
 	// queenside castling
@@ -133,9 +141,11 @@ void move_undo (move *m)
 	{
 		curboard->cast [!curboard->side] [0] = 1;
 		piece *rook = curboard->rooks [!curboard->side] [0];
+		curboard->score [!curboard->side] -= posvals [!curboard->side] [pt_rook] [rook->square];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square - 2].piece = rook;
 		rook->square = m->square - 2;
+		curboard->score [!curboard->side] += posvals [!curboard->side] [pt_rook] [rook->square];
 	}
 
 	if (history [htop].special == ms_enpas)
@@ -144,7 +154,12 @@ void move_undo (move *m)
 		curboard->enpas = NULL;
 
 	if (m->special >= ms_qpromo && m->special <= ms_npromo)
+	{
+		curboard->score [!curboard->side] -= piecevals [curboard->pieces [m->piece].type] - piecevals [pt_pawn];
 		curboard->pieces [m->piece].type = pt_pawn;
+	}
+
+	curboard->score [!curboard->side] += posvals [!curboard->side] [curboard->pieces [m->piece].type] [m->from];
 
 	// untake a piece
 	if (m->taken < 32) 
