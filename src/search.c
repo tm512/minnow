@@ -23,7 +23,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 
 	m = move_genlist ();
 
-	if (oldpv && depth > 1)
+	if (oldpv && oldpv->nodes > 0 && depth > 1)
 	{
 		pvm.m = oldpv->moves [start - depth];
 		pvm.next = m;
@@ -65,9 +65,12 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		#endif
 
 		// if we're considering this move, make sure it is legal
-		if (score > alpha && !board_squareattacked (curboard->kings [!curboard->side]->square))
+		if (((alpha == oldalpha && score >= alpha) || score > alpha) && !board_squareattacked (curboard->kings [!curboard->side]->square))
 		{
 			alpha = score;
+
+//			if (depth == start)
+//				printf ("depth %u: alpha raised to %i from %i\n", depth, score, alpha);
 
 			pv->moves [0] = it->m;
 			memcpy (pv->moves + 1, stackpv.moves, stackpv.nodes * sizeof (move));
@@ -109,7 +112,7 @@ int16 search (uint8 depth, move *best)
 	{
 		char notation [6];
 		move_print (&oldpv.moves [j], notation);
-//		printf ("pv (%u): %s\n", j, notation);
+		printf ("pv (%u): %s\n", j, notation);
 	}
 
 	if (best)
