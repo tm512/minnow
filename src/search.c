@@ -5,6 +5,7 @@
 #include "board.h"
 #include "move.h"
 #include "eval.h"
+#include "timer.h"
 #include "search.h"
 
 uint64 leafnodes = 0;
@@ -102,22 +103,35 @@ int16 search (uint8 depth, move *best)
 {
 	int i, j;
 	int16 ret;
-	pvlist oldpv = { 0 };
+	uint64 start, totaltime = 0, ittime;
 
-	leafnodes = 0;
+	pvlist oldpv = { 0 };
 
 	for (i = 1; i <= depth; i++)
 	{
+		start = time_get ();
 		pvlist pv = { 0 };
 		ret = absearch (i, i, &pv, &oldpv, -30000, 30000);
 		oldpv = pv;
-	}
 
-	for (j = 0; j < oldpv.nodes; j++)
-	{
-		char notation [6];
-		move_print (&oldpv.moves [j], notation);
-	//	printf ("pv (%u): %s\n", j, notation);
+		ittime = time_since (start);
+
+		if (ittime == 0)
+			ittime = 1;
+
+		// print UCI info
+		printf ("info depth %u score cp %i time %u nodes %u nps %u pv ", i, ret, ittime, leafnodes, (leafnodes * 1000) / ittime);
+
+		for (j = 0; j < oldpv.nodes; j++)
+		{
+			char notation [6];
+			move_print (&oldpv.moves [j], notation);
+			printf ("%s ", notation);
+		}
+
+		printf ("\n");
+
+		leafnodes = 0;
 	}
 
 	if (best)

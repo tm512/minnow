@@ -8,6 +8,7 @@
 #include "board.h"
 #include "move.h"
 #include "search.h"
+#include "timer.h"
 
 const char *startpos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 extern uint64 leafnodes;
@@ -51,9 +52,9 @@ int main (void)
 
 		if (!strncmp (line, "search", 6))
 		{
-			clock_t start = clock ();
+			uint64 start = time_get ();
 			int16 score = search (atoi (&line [7]), NULL);
-			printf ("score: %i (search took %f seconds, %u leaf nodes)\n", score, (float)(clock () - start) / CLOCKS_PER_SEC, leafnodes);
+			printf ("score: %i (search took %f seconds, %u leaf nodes)\n", score, time_since_sec (start), leafnodes);
 			leafnodes = 0;
 		}
 
