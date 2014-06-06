@@ -12,7 +12,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 {
 	movelist *m, *it, pvm;
 	pvlist stackpv = { 0 };
-	int16 score, oldalpha = alpha;
+	int16 score;
 
 	if (depth == 0)
 	{
@@ -34,21 +34,31 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 
 	while (it)
 	{
+		if (it->m.taken == curboard->kings [!curboard->side] - curboard->pieces)
+		{
+			if (m == &pvm)
+				m = m->next;
+
+			move_clearnodes (m);
+
+			return 15000 + depth;
+		}
+
 		move_apply (&it->m);
+
+		if (it == &pvm)
+			score = -absearch (depth - 1, start, &stackpv, oldpv, -beta, -alpha);
+		else
+			score = -absearch (depth - 1, start, &stackpv, NULL, -beta, -alpha);
 
 		#if 0
 		if (depth == start)
 		{
 			char notation [6];
 			move_print (&it->m, notation);
-			printf ("%s\n", notation);
+			printf ("%s: %i\n", notation, score);
 		}
 		#endif
-
-		if (it == &pvm)
-			score = -absearch (depth - 1, start, &stackpv, oldpv, -beta, -alpha);
-		else
-			score = -absearch (depth - 1, start, &stackpv, NULL, -beta, -alpha);
 
 		#if 1
 		if (depth != start && score >= beta)
@@ -65,12 +75,10 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		#endif
 
 		// if we're considering this move, make sure it is legal
-		if (((alpha == oldalpha && score >= alpha) || score > alpha) && !board_squareattacked (curboard->kings [!curboard->side]->square))
+	//	if (((alpha == oldalpha && score >= alpha) || score > alpha) && !board_squareattacked (curboard->kings [!curboard->side]->square))
+		if (score > alpha)
 		{
 			alpha = score;
-
-//			if (depth == start)
-//				printf ("depth %u: alpha raised to %i from %i\n", depth, score, alpha);
 
 			pv->moves [0] = it->m;
 			memcpy (pv->moves + 1, stackpv.moves, stackpv.nodes * sizeof (move));
@@ -85,18 +93,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		m = m->next;
 
 	move_clearnodes (m);
-
-	if (alpha == oldalpha)
-	{
-		curboard->side = !curboard->side;
-
-		if (board_squareattacked (curboard->kings [!curboard->side]->square))
-			alpha = -15000 - depth; // subtract the depth so that sooner checkmates score higher
-//		else
-//			alpha = 0;
-
-		curboard->side = !curboard->side;
-	}
 
 	return alpha;
 }
@@ -114,7 +110,6 @@ int16 search (uint8 depth, move *best)
 	{
 		pvlist pv = { 0 };
 		ret = absearch (i, i, &pv, &oldpv, -30000, 30000);
-		printf ("%i\n", ret);
 		oldpv = pv;
 	}
 
@@ -122,7 +117,7 @@ int16 search (uint8 depth, move *best)
 	{
 		char notation [6];
 		move_print (&oldpv.moves [j], notation);
-		printf ("pv (%u): %s\n", j, notation);
+	//	printf ("pv (%u): %s\n", j, notation);
 	}
 
 	if (best)
