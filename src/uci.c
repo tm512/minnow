@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "int.h"
@@ -59,7 +60,27 @@ int uci_main (void)
 		{
 			move best;
 			char c [6];
-			search (6, &best);
+			uint64 depth = 0, wtime = 0, btime = 0;
+			char *cdepth, *cwtime, *cbtime;
+
+			// determine some search options
+			cdepth = strstr (line, "depth");
+			cwtime = strstr (line, "wtime");
+			cbtime = strstr (line, "btime");
+
+			if (cdepth)
+				depth = atoi (cdepth + 6);
+
+			if (cwtime)
+				wtime = atoi (cwtime + 6);
+
+			if (cbtime)
+				btime = atoi (cbtime + 6);
+
+			if (depth == 2)
+				depth = 2; // never search less than 2 deep
+
+			search (depth, wtime, btime, &best);
 			move_print (&best, c);
 			printf ("bestmove %s\n", c);
 		}

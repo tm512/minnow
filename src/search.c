@@ -9,11 +9,20 @@
 #include "search.h"
 
 uint64 leafnodes = 0;
+uint64 endtime = 0;
+uint64 iterations = 0;
 int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha, int16 beta)
 {
 	movelist *m, *it, pvm;
 	pvlist stackpv = { 0 };
 	int16 score;
+
+	// check if we're out of time every so often
+	if (!(++iterations & 8191) && time_get () >= endtime)
+	{
+		pv->nodes = 0;
+		return 31000;
+	}
 
 	if (depth == 0)
 	{
@@ -52,6 +61,17 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		else
 			score = -absearch (depth - 1, start, &stackpv, NULL, -beta, -alpha);
 
+		if (score == -31000)
+		{
+			if (m == &pvm)
+				m = m->next;
+
+			move_clearnodes (m);
+
+			pv->nodes = 0;
+			return 31000;
+		}
+
 		#if 0
 		if (depth == start)
 		{
@@ -76,7 +96,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		#endif
 
 		// if we're considering this move, make sure it is legal
-	//	if (((alpha == oldalpha && score >= alpha) || score > alpha) && !board_squareattacked (curboard->kings [!curboard->side]->square))
 		if (score > alpha)
 		{
 			alpha = score;
@@ -99,39 +118,63 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 }
 
 // iterative deepening
-int16 search (uint8 depth, move *best)
+int16 search (uint8 depth, uint64 wtime, uint64 btime, move *best)
 {
 	int i, j;
 	int16 ret;
-	uint64 start, totaltime = 0, ittime;
+	uint64 start, maxtime, ittime;
 
 	pvlist oldpv = { 0 };
+
+	// Search "indefinitely"
+	if (depth == 0)
+		depth = 255;
+
+	if (wtime > 0) // determine how much time to spend on this move
+	{
+		maxtime = wtime / 10; // start with 1/10th of the time we have left
+
+		if (wtime - maxtime > btime) // if we'd still have more time than our opponent after this move, give some extra
+			maxtime += (wtime - btime - maxtime) / 2;
+
+		endtime = time_get () + maxtime;
+		printf ("using %u\n", maxtime);
+	}
+	else
+		endtime = ~0; // never end
 
 	for (i = 1; i <= depth; i++)
 	{
 		start = time_get ();
 		pvlist pv = { 0 };
 		ret = absearch (i, i, &pv, &oldpv, -30000, 30000);
-		oldpv = pv;
 
 		ittime = time_since (start);
 
-		if (ittime == 0)
-			ittime = 1;
-
-		// print UCI info
-		printf ("info depth %u score cp %i time %u nodes %u nps %u pv ", i, ret, ittime, leafnodes, (leafnodes * 1000) / ittime);
-
-		for (j = 0; j < oldpv.nodes; j++)
+		if (pv.nodes > 0)
 		{
-			char notation [6];
-			move_print (&oldpv.moves [j], notation);
-			printf ("%s ", notation);
+			oldpv = pv;
+
+			if (ittime == 0)
+				ittime = 1;
+
+			// print UCI info
+			printf ("info depth %u score cp %i time %u nodes %u nps %u pv ", i, ret, ittime, leafnodes, (leafnodes * 1000) / ittime);
+
+			for (j = 0; j < oldpv.nodes; j++)
+			{
+				char notation [6];
+				move_print (&oldpv.moves [j], notation);
+				printf ("%s ", notation);
+			}
+
+			printf ("\n");
 		}
 
-		printf ("\n");
-
 		leafnodes = 0;
+
+		if (time_get () >= endtime)
+			break;
 	}
 
 	if (best)
