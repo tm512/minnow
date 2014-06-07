@@ -5,7 +5,11 @@
 	#define _POSIX_C_SOURCE 199309L
 	#include <stdio.h>
 	#include <unistd.h>
-	#include <time.h>
+	#ifdef __FreeBSD__
+		#include <sys/time.h>
+	#else
+		#include <time.h>
+	#endif
 #endif
 
 #include "int.h"

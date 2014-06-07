@@ -5,7 +5,7 @@ GIT_VERSION = $(shell ./gitver.sh)
 CFLAGS_ = -std=c99 -pedantic -DGIT_VERSION="\"$(GIT_VERSION)\"" $(CFLAGS) 
 LDFLAGS_ = $(LDFLAGS)
 OBJDIR = obj
-OUT = chess
+OUT = minnow
 
 .PHONY: clean
 default: debug
