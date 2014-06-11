@@ -13,7 +13,7 @@ int uci_main (void)
 {
 	char line [8192];
 
-	printf ("id name minnow " GIT_VERSION "\n");
+	printf ("\nid name minnow " GIT_VERSION "\n");
 	printf ("id author tm512\n");
 	printf ("uciok\n");
 	fflush (stdout);
