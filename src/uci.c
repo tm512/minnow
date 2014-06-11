@@ -6,6 +6,7 @@
 #include "board.h"
 #include "move.h"
 #include "search.h"
+#include "timer.h"
 
 extern const char *startpos;
 int uci_main (void)
@@ -60,7 +61,7 @@ int uci_main (void)
 		{
 			move best;
 			char c [6];
-			uint64 depth = 0, wtime = 0, btime = 0;
+			uint64 depth = 0, wtime = 0, btime = 0, maxtime = 0;
 			char *cdepth, *cwtime, *cbtime;
 
 			// determine some search options
@@ -80,7 +81,15 @@ int uci_main (void)
 			if (depth == 2)
 				depth = 2; // never search less than 2 deep
 
-			search (depth, wtime, btime, &best);
+			if (cwtime && cbtime)
+			{
+				if (curboard->side)
+					maxtime = time_alloc (btime, wtime);
+				else
+					maxtime = time_alloc (wtime, btime);
+			}
+
+			search (depth, maxtime, &best);
 			move_print (&best, c);
 			printf ("bestmove %s\n", c);
 		}

@@ -53,7 +53,7 @@ int main (void)
 		if (!strncmp (line, "search", 6))
 		{
 			uint64 start = time_get ();
-			int16 score = search (atoi (&line [7]), 0, 0, NULL);
+			int16 score = search (atoi (&line [7]), 0, NULL);
 			printf ("score: %i (search took %f seconds, %u leaf nodes)\n", score, time_since_sec (start), leafnodes);
 			leafnodes = 0;
 		}

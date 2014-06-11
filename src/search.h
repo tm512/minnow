@@ -8,7 +8,7 @@ typedef struct pvlist_s
 	move moves [64];
 } pvlist;
 
-int16 search (uint8 depth, uint64 wtime, uint64 btime, move *best);
+int16 search (uint8 depth, uint64 maxtime, move *best);
 int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha, int16 beta);
 uint64 perft (uint8 depth, uint8 start);
 

@@ -95,7 +95,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		}
 		#endif
 
-		// if we're considering this move, make sure it is legal
 		if (score > alpha)
 		{
 			alpha = score;
@@ -118,11 +117,11 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 }
 
 // iterative deepening
-int16 search (uint8 depth, uint64 wtime, uint64 btime, move *best)
+int16 search (uint8 depth, uint64 maxtime, move *best)
 {
 	int i, j;
 	int16 ret;
-	uint64 start, maxtime, ittime;
+	uint64 start, ittime;
 
 	pvlist oldpv = { 0 };
 
@@ -130,16 +129,8 @@ int16 search (uint8 depth, uint64 wtime, uint64 btime, move *best)
 	if (depth == 0)
 		depth = 255;
 
-	if (wtime > 0) // determine how much time to spend on this move
-	{
-		maxtime = wtime / 10; // start with 1/10th of the time we have left
-
-		if (wtime - maxtime > btime) // if we'd still have more time than our opponent after this move, give some extra
-			maxtime += (wtime - btime - maxtime) / 2;
-
+	if (maxtime > 0) // determine how much time to spend on this move
 		endtime = time_get () + maxtime;
-		printf ("using %u\n", maxtime);
-	}
 	else
 		endtime = ~0; // never end
 
@@ -173,7 +164,8 @@ int16 search (uint8 depth, uint64 wtime, uint64 btime, move *best)
 
 		leafnodes = 0;
 
-		if (time_get () >= endtime)
+		// since each iteration takes longer than the last, don't search deeper if we couldn't repeat this last search twice
+		if (time_get () >= endtime - ittime * 2)
 			break;
 	}
 

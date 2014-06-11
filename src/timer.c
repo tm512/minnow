@@ -36,3 +36,36 @@ float time_since_sec (uint64 start)
 {
 	return (float)time_since (start) / 1000.0f;
 }
+
+static uint64 maxtimes [6][2] =
+{
+	{ 300000, 5000 },
+	{ 600000, 10000 },
+	{ 900000, 15000 },
+	{ 1800000, 30000 },
+	{ 3600000, 60000 },
+	{ 7200000, 120000 }
+};
+
+#define min(a, b) ((a < b) ? a : b)
+uint64 time_alloc (uint64 time, uint64 nottime)
+{
+	uint64 ret;
+	int i;
+
+	// find an upper bound based on our time left
+	for (i = 0; i < 6; i++)
+		if (time < maxtimes [i] [0])
+		{
+			ret = maxtimes [i] [1];
+			break;
+		}
+
+	// if we're running out of time, move faster
+	ret = min (ret, time / 10);
+
+	if (time - ret > nottime) // if we'd still have more time than our opponent after this move, give some extra
+		ret += (time - nottime - ret) / 2;
+
+	return ret;
+}
