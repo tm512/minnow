@@ -119,7 +119,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 // iterative deepening
 int16 search (uint8 depth, uint64 maxtime, move *best)
 {
-	int i, j;
 	int16 ret;
 	uint64 start, ittime;
 
@@ -134,7 +133,7 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	else
 		endtime = ~0; // never end
 
-	for (i = 1; i <= depth; i++)
+	for (int i = 1; i <= depth; i++)
 	{
 		start = time_get ();
 		pvlist pv = { 0 };
@@ -152,7 +151,7 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 			// print UCI info
 			printf ("info depth %u score cp %i time %u nodes %u nps %u pv ", i, ret, ittime, leafnodes, (leafnodes * 1000) / ittime);
 
-			for (j = 0; j < oldpv.nodes; j++)
+			for (int j = 0; j < oldpv.nodes; j++)
 			{
 				char notation [6];
 				move_print (&oldpv.moves [j], notation);

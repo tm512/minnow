@@ -30,7 +30,6 @@ piece dummy = { .flags = pf_moved };
 
 void board_initialize (const char *fen)
 {
-	int i;
 	uint8 rank = 91, file = 0;
 	const char *it = fen;
 	// track indexes into the piece array
@@ -52,7 +51,7 @@ void board_initialize (const char *fen)
 	curboard->score [0] = curboard->score [1] = 0;
 
 	// initialize squares
-	for (i = 0; i < 120; i++)
+	for (int i = 0; i < 120; i++)
 	{
 		// padding squares, we use these in move generation
 		if (i < 21 || i > 98 || i % 10 == 0 || (i + 1) % 10 == 0)
@@ -64,7 +63,7 @@ void board_initialize (const char *fen)
 	}
 
 	// initialize pieces
-	for (i = 0; i < 32; i++)
+	for (int i = 0; i < 32; i++)
 	{
 		curboard->pieces [i].type = pt_none;
 		curboard->pieces [i].side = (i > 15);
@@ -225,11 +224,10 @@ uint8 board_squareattacked (uint8 sq)
 
 void board_print (void)
 {
-	int i;
 	uint8 rank = 0;
 	square *sq;
 	printf ("\n  |a|b|c|d|e|f|g|h|");
-	for (i = 20; i < 100; i++)
+	for (int i = 20; i < 100; i++)
 	{
 		sq = &curboard->squares [i];
 		if (i % 10 == 0)

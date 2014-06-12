@@ -200,7 +200,6 @@ movelist *move_pawnmove (uint8 piece)
 	uint8 sqnum = curboard->pieces [piece].square;
 	square *sq = &curboard->squares [sqnum];
 	struct piece_s *p = &curboard->pieces [piece];
-	int i;
 
 	ret = it = NULL;
 
@@ -226,11 +225,10 @@ movelist *move_pawnmove (uint8 piece)
 		// moving onto the first rank of the opponent?
 		if ((sq + pawn2forward [side])->padding)
 		{
-			int j;
 			it->m.special = ms_qpromo;
 
 			// add the other promotions too
-			for (j = ms_rpromo; j <= ms_npromo; j++)
+			for (int j = ms_rpromo; j <= ms_npromo; j++)
 			{
 				it->next = move_newnode (piece, 32, sqnum + pawnforward [side], sqnum);
 				it = it->next;
@@ -241,7 +239,7 @@ movelist *move_pawnmove (uint8 piece)
 	}
 
 	// see if we can take
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		// break if we shouldn't consider en passant moves
 		if (i > 1 && !curboard->enpas)
@@ -270,11 +268,10 @@ movelist *move_pawnmove (uint8 piece)
 			// moving onto the first rank of the opponent?
 			if ((sq + pawn2forward [side])->padding)
 			{
-				int j;
 				it->m.special = ms_qpromo;
 
 				// add the other promotions too
-				for (j = ms_rpromo; j <= ms_npromo; j++)
+				for (int j = ms_rpromo; j <= ms_npromo; j++)
 				{
 					it->next = move_newnode (piece, (sq + pawntake [side] [i])->piece - curboard->pieces,
 					                         sqnum + pawntake [side] [i > 1 ? i - 2 : i], sqnum);
@@ -296,13 +293,12 @@ movelist *move_knightmove (uint8 piece)
 	movelist *ret, *it;
 	uint8 sqnum = curboard->pieces [piece].square;
 	square *sq = &curboard->squares [sqnum];
-	int i;
 
 	ret = it = NULL;
 
 	setside (piece, &side, &notside);
 
-	for (i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		// see if our own piece is here or if this is off the board
 		if (((sq + knightmove [i])->piece && (sq + knightmove [i])->piece->side == side)
@@ -332,14 +328,13 @@ movelist *move_slidermove (uint8 piece, int8 *moves, uint8 nmoves)
 	movelist *ret, *it;
 	uint8 sqnum = curboard->pieces [piece].square;
 	square *sq = &curboard->squares [sqnum];
-	int i, offs;
 	int8 j;
 
 	ret = it = NULL;
 
 	setside (piece, &side, &notside);
 
-	for (i = 0; i < nmoves; i++)
+	for (int i = 0; i < nmoves; i++)
 	{
 		j = moves [i];
 		while (!(sq + j)->padding && (!(sq + j)->piece || (sq + j)->piece->side == notside))
@@ -391,14 +386,13 @@ movelist *move_kingmove (uint8 piece)
 	movelist *ret, *it;
 	uint8 sqnum = curboard->pieces [piece].square;
 	square *sq = &curboard->squares [sqnum];
-	int i, offs;
 	struct piece_s *p = &curboard->pieces [piece];
 
 	ret = it = NULL;
 
 	setside (piece, &side, &notside);
 
-	for (i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		// see if our own piece is here or if this is off the board
 		if (((sq + qkmove [i])->piece && (sq + qkmove [i])->piece->side == side) || (sq + qkmove [i])->padding)
@@ -431,7 +425,6 @@ movelist *move_kingmove (uint8 piece)
 		    !board_squareattacked (p->square) && !board_squareattacked (p->square + 1) &&
 		    !board_squareattacked (p->square + 2))
 		{
-			//printf ("adding king side castle\n");
 			it->next = move_newnode (piece, 32, sqnum + 2, sqnum);
 			it = it->next;
 			it->m.special = ms_kcast;
@@ -459,11 +452,9 @@ movelist *nodes = NULL;
 
 void move_initnodes (void)
 {
-	int i;
-
 	nodes = malloc (maxnodes * sizeof (movelist));
 	memset (nodes, 0, maxnodes * sizeof (movelist));
-	for (i = 0; i < maxnodes; i++)
+	for (int i = 0; i < maxnodes; i++)
 		nodes [i].next = &nodes [i + 1];
 }
 
@@ -509,12 +500,11 @@ void move_clearnodes (movelist *m)
 movelist *move_genlist (void)
 {
 	uint8 side = curboard->side * 16;
-	int i;
 	movelist *ret, *m, *it;
 
 	ret = it = NULL;
 
-	for (i = side; i < side + 16; i++)
+	for (int i = side; i < side + 16; i++)
 	{
 		// taken pieces can't move
 		if (curboard->pieces [i].flags & pf_taken || curboard->pieces [i].type == pt_none)

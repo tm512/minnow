@@ -51,10 +51,9 @@ static uint64 maxtimes [6][2] =
 uint64 time_alloc (uint64 time, uint64 nottime)
 {
 	uint64 ret;
-	int i;
 
 	// find an upper bound based on our time left
-	for (i = 0; i < 6; i++)
+	for (int i = 0; i < 6; i++)
 		if (time < maxtimes [i] [0])
 		{
 			ret = maxtimes [i] [1];
