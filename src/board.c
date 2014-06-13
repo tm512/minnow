@@ -39,6 +39,7 @@ void board_initialize (const char *fen)
 		free (curboard);
 
 	curboard = malloc (sizeof (board));
+	htop = 0;
 
 	// initialize castling stuff
 	curboard->cast [0] [0] = curboard->cast [0] [1] = 0;

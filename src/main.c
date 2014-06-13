@@ -9,6 +9,7 @@
 #include "move.h"
 #include "search.h"
 #include "timer.h"
+#include "eval.h"
 
 const char *startpos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 extern uint64 leafnodes;

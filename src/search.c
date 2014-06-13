@@ -28,29 +28,23 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 	{
 		leafnodes ++;
 		pv->nodes = 0;
-		return evaluate ();
+		return evaluate (alpha, beta);
 	}
 
-	m = move_genlist ();
+	it = m = move_genlist ();
 
-	if (oldpv && oldpv->nodes > 0 && depth > 1)
+	if (oldpv && oldpv->nodes > 0 && depth > 1 && oldpv->moves [start - depth].square != 0)
 	{
 		pvm.m = oldpv->moves [start - depth];
 		pvm.next = m;
-		m = &pvm;
+		it = &pvm;
 	}
-
-	it = m;
 
 	while (it)
 	{
 		if (it->m.taken == curboard->kings [!curboard->side] - curboard->pieces)
 		{
-			if (m == &pvm)
-				m = m->next;
-
 			move_clearnodes (m);
-
 			return 15000 + depth;
 		}
 
@@ -63,9 +57,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 
 		if (score == -31000)
 		{
-			if (m == &pvm)
-				m = m->next;
-
+			move_undo (&it->m);
 			move_clearnodes (m);
 
 			pv->nodes = 0;
@@ -85,16 +77,13 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		if (depth != start && score >= beta)
 		{
 			move_undo (&it->m);
-
-			if (m == &pvm)
-				m = m->next;
-
 			move_clearnodes (m);
 
 			return beta;
 		}
 		#endif
 
+		// Make sure the move is legal if it exceeds alpha
 		if (score > alpha)
 		{
 			alpha = score;
@@ -107,9 +96,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		move_undo (&it->m);
 		it = it->next;
 	}
-
-	if (m == &pvm)
-		m = m->next;
 
 	move_clearnodes (m);
 

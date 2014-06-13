@@ -33,6 +33,8 @@ typedef struct movelist_s
 } movelist;
 
 extern movelist *moveroot;
+extern move history [128];
+extern uint8 htop;
 
 void move_apply (move *m);
 void move_make (move *m);
