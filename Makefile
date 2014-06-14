@@ -1,4 +1,6 @@
-CC = gcc
+CROSS = 
+CC = $(CROSS)gcc
+STRIP = $(CROSS)strip
 CFLAGS =
 LDFLAGS =
 GIT_VERSION = $(shell ./gitver.sh)
@@ -7,8 +9,8 @@ LDFLAGS_ = $(LDFLAGS)
 OBJDIR = obj
 OUT = minnow
 
-.PHONY: clean
-default: debug
+.PHONY: default release debug profile strip clean
+default: release
 
 release: CFLAGS_ += -O2 -g3
 release: $(OUT)
@@ -19,6 +21,9 @@ debug: $(OUT)
 profile: CFLAGS_ += -O0 -g3 -pg
 profile: LDFLAGS_ += -pg
 profile: $(OUT)
+
+strip: release
+	@$(STRIP) $(OUT)
 
 SRC = $(wildcard src/*.c)
 HDR = $(wildcard src/*.h)
