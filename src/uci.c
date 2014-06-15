@@ -101,7 +101,7 @@ int uci_main (void)
 			if (cbtime)
 				btime = atoi (cbtime + 6);
 
-			if (depth == 2)
+			if (depth == 1)
 				depth = 2; // never search less than 2 deep
 
 			if (cwtime && cbtime)

@@ -78,8 +78,7 @@ int main (void)
 		{
 			uint64 start = time_get ();
 			int16 score = search (atoi (&line [7]), 0, NULL);
-			printf ("score: %i (search took %f seconds, %u leaf nodes)\n", score, time_since_sec (start), leafnodes);
-			leafnodes = 0;
+			printf ("score: %i (search took %f seconds)\n", score, time_since_sec (start));
 		}
 
 		line [0] = 0;
