@@ -70,11 +70,11 @@ movelist *move_genlist (void);
 void move_print (move *m, char *c);
 void move_decode (const char *c, move *m);
 
-movelist *move_pawnmove (uint8 piece);
-movelist *move_knightmove (uint8 piece);
-movelist *move_bishopmove (uint8 piece);
-movelist *move_rookmove (uint8 piece);
-movelist *move_queenmove (uint8 piece);
-movelist *move_kingmove (uint8 piece);
+movelist *move_pawnmove (uint8 piece, movelist **tail);
+movelist *move_knightmove (uint8 piece, movelist **tail);
+movelist *move_bishopmove (uint8 piece, movelist **tail);
+movelist *move_rookmove (uint8 piece, movelist **tail);
+movelist *move_queenmove (uint8 piece, movelist **tail);
+movelist *move_kingmove (uint8 piece, movelist **tail);
 
 #endif

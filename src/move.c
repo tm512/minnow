@@ -216,7 +216,7 @@ extern uint8 attackhack;
 static int8 pawnforward [2] = { 10, -10 };
 static int8 pawn2forward [2] = { 20, -20 };
 static int8 pawntake [2][4] = { { 9, 11, -1, 1 }, { -9, -11, 1, -1 } };
-movelist *move_pawnmove (uint8 piece)
+movelist *move_pawnmove (uint8 piece, movelist **tail)
 {
 	uint8 side, notside;
 	movelist *ret, *it;
@@ -306,11 +306,12 @@ movelist *move_pawnmove (uint8 piece)
 		}
 	}
 
+	*tail = it;
 	return ret;
 }
 
 static int8 knightmove [8] = { -21, -19, -12, -8, 8, 12, 19, 21 };
-movelist *move_knightmove (uint8 piece)
+movelist *move_knightmove (uint8 piece, movelist **tail)
 {
 	uint8 side, notside;
 	movelist *ret, *it;
@@ -342,10 +343,11 @@ movelist *move_knightmove (uint8 piece)
 			it->m.taken = (sq + knightmove [i])->piece - curboard->pieces;
 	}
 
+	*tail = it;
 	return ret;
 }
 
-movelist *move_slidermove (uint8 piece, int8 *moves, uint8 nmoves)
+movelist *move_slidermove (uint8 piece, int8 *moves, uint8 nmoves, movelist **tail)
 {
 	uint8 side, notside;
 	movelist *ret, *it;
@@ -382,28 +384,29 @@ movelist *move_slidermove (uint8 piece, int8 *moves, uint8 nmoves)
 		}
 	}
 
+	*tail = it;
 	return ret;
 }
 
 static int8 bishopmove [4] = { -11, -9, 9, 11 };
-movelist *move_bishopmove (uint8 piece)
+movelist *move_bishopmove (uint8 piece, movelist **tail)
 {
-	return move_slidermove (piece, bishopmove, 4);
+	return move_slidermove (piece, bishopmove, 4, tail);
 }
 
 static int8 rookmove [4] = { -10, -1, 1, 10 };
-movelist *move_rookmove (uint8 piece)
+movelist *move_rookmove (uint8 piece, movelist **tail)
 {
-	return move_slidermove (piece, rookmove, 4);
+	return move_slidermove (piece, rookmove, 4, tail);
 }
 
 static int8 qkmove [8] = { -11, -10, -9, -1, 1, 9, 10, 11 };
-movelist *move_queenmove (uint8 piece)
+movelist *move_queenmove (uint8 piece, movelist **tail)
 {
-	return move_slidermove (piece, qkmove, 8);
+	return move_slidermove (piece, qkmove, 8, tail);
 }
 
-movelist *move_kingmove (uint8 piece)
+movelist *move_kingmove (uint8 piece, movelist **tail)
 {
 	uint8 side, notside;
 	movelist *ret, *it;
@@ -468,6 +471,7 @@ movelist *move_kingmove (uint8 piece)
 		curboard->side = !curboard->side;
 	}
 
+	*tail = it;
 	return ret;
 }
 
@@ -551,9 +555,9 @@ movelist *move_order (movelist *list)
 movelist *move_genlist (void)
 {
 	uint8 side = curboard->side * 16;
-	movelist *ret, *m, *it;
+	movelist *ret, *m, *it, *tail;
 
-	ret = it = NULL;
+	ret = it = tail = NULL;
 
 	for (int i = side; i < side + 16; i++)
 	{
@@ -562,7 +566,7 @@ movelist *move_genlist (void)
 			continue;
 
 		// generate all moves from this piece
-		m = curboard->pieces [i].movefunc (i);
+		m = curboard->pieces [i].movefunc (i, &tail);
 
 		if (m)
 		{
@@ -573,10 +577,7 @@ movelist *move_genlist (void)
 				it->next = m;
 
 			// move it to the end of the list
-			while (it->next)
-			{
-				it = it->next;
-			}
+			it = tail;
 		}
 	}
 

@@ -62,7 +62,7 @@ typedef struct piece_s
 		pt_queen,
 		pt_king
 	} type;
-	struct movelist_s *(*movefunc) (uint8 piece);
+	struct movelist_s *(*movefunc) (uint8 piece, struct movelist_s **tail);
 } piece;
 
 typedef struct board_s
