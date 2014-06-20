@@ -21,107 +21,151 @@
    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
    OTHER DEALINGS IN THE SOFTWARE. */
 
+#define _POSIX_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
+	#include <sys/select.h>
+#else
+	#include <windows.h>
+#endif
 
 #include "int.h"
 #include "board.h"
 #include "move.h"
 #include "search.h"
 #include "timer.h"
+#include "uci.h"
 
 extern const char *startpos;
 int uci_main (void)
 {
-	char line [8192];
+	setbuf (stdin, NULL);
+	setbuf (stdout, NULL);
 
 	printf ("\nid name minnow " GIT_VERSION "\n");
 	printf ("id author tm512\n");
 	printf ("uciok\n");
 	fflush (stdout);
 
-	while (1)
-	{
-		fgets (line, 8192, stdin);
-
-		if (!strncmp (line, "isready", 7))
-			printf ("readyok\n");
-
-		if (!strncmp (line, "position", 8))
-		{
-			char *posline = line + 9;
-
-			if (!strncmp (posline, "startpos", 8))
-				board_initialize (startpos);
-			else if (!strncmp (posline, "fen", 3))
-				board_initialize (posline + 4);
-
-			// need to make some moves on this position as well?
-			posline = strstr (line, "moves");
-
-			if (posline)
-			{
-				posline += 6;
-
-				while (1)
-				{
-					move m = { 0 };
-					move_decode (posline, &m);
-					move_make (&m);
-
-					posline = strstr (posline, " ");
-
-					if (!posline)
-						break;
-
-					posline ++;
-				}
-			}
-		}
-
-		if (!strncmp (line, "go", 2))
-		{
-			move best;
-			char c [6];
-			uint64 depth = 0, wtime = 0, btime = 0, maxtime = 0;
-			char *cdepth, *cwtime, *cbtime;
-
-			// determine some search options
-			cdepth = strstr (line, "depth");
-			cwtime = strstr (line, "wtime");
-			cbtime = strstr (line, "btime");
-
-			if (cdepth)
-				depth = atoi (cdepth + 6);
-
-			if (cwtime)
-				wtime = atoi (cwtime + 6);
-
-			if (cbtime)
-				btime = atoi (cbtime + 6);
-
-			if (depth == 1)
-				depth = 2; // never search less than 2 deep
-
-			if (cwtime && cbtime)
-			{
-				if (curboard->side)
-					maxtime = time_alloc (btime, wtime);
-				else
-					maxtime = time_alloc (wtime, btime);
-			}
-
-			search (depth, maxtime, &best);
-			move_print (&best, c);
-			printf ("bestmove %s\n", c);
-		}
-
-		if (!strncmp (line, "quit", 4))
-			return 0;
-
-		fflush (stdout);
-	}
+	while (uci_parse (0));
 
 	return 0;
+}
+
+uint8 uci_parse (uint8 searching)
+{
+	char line [8192];
+	fgets (line, 8192, stdin);
+
+	if (!strncmp (line, "isready", 7))
+		printf ("readyok\n");
+
+	if (!strncmp (line, "position", 8))
+	{
+		char *posline = line + 9;
+
+		if (!strncmp (posline, "startpos", 8))
+			board_initialize (startpos);
+		else if (!strncmp (posline, "fen", 3))
+			board_initialize (posline + 4);
+
+		// need to make some moves on this position as well?
+		posline = strstr (line, "moves");
+
+		if (posline)
+		{
+			posline += 6;
+
+			while (1)
+			{
+				move m = { 0 };
+				move_decode (posline, &m);
+				move_make (&m);
+
+				posline = strstr (posline, " ");
+
+				if (!posline)
+					break;
+
+				posline ++;
+			}
+		}
+
+		if (searching)
+			return 0;
+	}
+
+	if (!strncmp (line, "go", 2))
+	{
+		move best;
+		char c [6];
+		uint64 depth = 0, wtime = 0, btime = 0, maxtime = 0;
+		char *cdepth, *cwtime, *cbtime;
+
+		// determine some search options
+		cdepth = strstr (line, "depth");
+		cwtime = strstr (line, "wtime");
+		cbtime = strstr (line, "btime");
+
+		if (cdepth)
+			depth = atoi (cdepth + 6);
+
+		if (cwtime)
+			wtime = atoi (cwtime + 6);
+
+		if (cbtime)
+			btime = atoi (cbtime + 6);
+
+		if (depth == 1)
+			depth = 2; // never search less than 2 deep
+
+		if (cwtime && cbtime)
+		{
+			if (curboard->side)
+				maxtime = time_alloc (btime, wtime);
+			else
+				maxtime = time_alloc (wtime, btime);
+		}
+
+		search (depth, maxtime, &best);
+		move_print (&best, c);
+		printf ("bestmove %s\n", c);
+	}
+
+	if (!strncmp (line, "disp", 4))
+		board_print ();
+
+	if (!strncmp (line, "quit", 4))
+		exit (0);
+
+	if (!strncmp (line, "stop", 4) && searching)
+		return 0;
+
+	fflush (stdout);
+
+	return 1;
+}
+
+uint8 uci_peek (void)
+{
+	#ifndef _WIN32
+	fd_set rfs;
+	struct timeval t = { 0 };
+
+	FD_ZERO (&rfs);
+	FD_SET (fileno (stdin), &rfs);
+	select (16, &rfs, 0, 0, &t);
+
+	return FD_ISSET (fileno (stdin), &rfs);
+	#else
+	HANDLE stdin_h = GetStdHandle (STD_INPUT_HANDLE);
+	if (GetConsoleMode(stdin_h, NULL))
+		return 0; // meh
+
+	DWORD avail;
+	PeekNamedPipe (stdin_h, NULL, 0, 0, &avail, 0);
+	return avail > 0;
+	#endif
 }

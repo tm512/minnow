@@ -25,5 +25,7 @@
 #define UCI_H__
 
 int uci_main (void);
+uint8 uci_parse (uint8 searching);
+uint8 uci_peek (void);
 
 #endif

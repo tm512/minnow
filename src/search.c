@@ -29,6 +29,7 @@
 #include "move.h"
 #include "eval.h"
 #include "timer.h"
+#include "uci.h"
 #include "search.h"
 
 uint64 leafnodes = 0;
@@ -40,11 +41,21 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 	pvlist stackpv = { 0 };
 	int16 score;
 
-	// check if we're out of time every so often
-	if (!(++iterations & 8191) && time_get () >= endtime)
+	// occasionally check if we need to abort
+	if (!(++iterations & 8191))
 	{
-		pv->nodes = 0;
-		return 31000;
+		uint8 ret = 1;
+
+		// see if we have input waiting on stdin
+		while (uci_peek () && ret)
+			ret = uci_parse (1);
+
+		if (time_get () >= endtime || !ret)
+		{
+			printf ("interrupted search\n");
+			pv->nodes = 0;
+			return 31000;
+		}
 	}
 
 	if (depth == 0)
@@ -128,7 +139,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 // iterative deepening
 int16 search (uint8 depth, uint64 maxtime, move *best)
 {
-	int16 ret;
+	int16 ret, oldret;
 	uint64 start, ittime;
 
 	pvlist oldpv = { 0 };
@@ -168,9 +179,16 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 			}
 
 			printf ("\n");
+			fflush (stdout);
 		}
 
 		leafnodes = 0;
+
+		// if the last search returned +/- 31000, it was aborted
+		if (ret == 31000 || ret == -31000)
+			break;
+
+		oldret = ret;
 
 		// since each iteration takes longer than the last, don't search deeper if we couldn't repeat this last search twice
 		if (time_get () >= endtime - ittime * 2)
@@ -180,7 +198,7 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	if (best)
 		*best = oldpv.moves [0];
 
-	return ret;
+	return oldret;
 }
 
 uint64 castles = 0, promos = 0;
