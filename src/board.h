@@ -78,6 +78,10 @@ typedef struct board_s
 	piece *enpas;
 
 	int16 score [2];
+
+	// move ordering:
+	uint32 victim [33];
+	uint32 attack [33];
 } board;
 
 extern board *curboard;

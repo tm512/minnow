@@ -492,6 +492,7 @@ movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 	ret->m.square = square;
 	ret->m.from = from;
 	ret->m.special = 0;
+	ret->m.score = curboard->victim [taken] + curboard->attack [piece];
 
 	ret->next = NULL;
 
@@ -517,6 +518,33 @@ void move_clearnodes (movelist *m)
 	nodes = m;
 
 	numnodes --;
+}
+
+movelist *move_order (movelist *list)
+{
+	movelist *sorted = NULL;
+
+	while (list)
+	{   
+		movelist *head = list, **trail = &sorted;
+
+		list = list->next;
+
+		while (1) 
+		{
+			// move the head?
+			if (!(*trail) || head->m.score < (*trail)->m.score)
+			{
+				head->next = *trail;
+				*trail = head;
+				break;
+			}
+			else
+				trail = &(*trail)->next;
+		}
+	}
+
+	return sorted;
 }
 
 // generate child nodes based on the current board
@@ -552,7 +580,7 @@ movelist *move_genlist (void)
 		}
 	}
 
-	return ret;
+	return move_order (ret);
 }
 
 void move_print (move *m, char *c)

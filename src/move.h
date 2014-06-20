@@ -45,6 +45,8 @@ typedef struct move_s
 	uint8 square;
 	uint8 from;
 	uint8 special;
+
+	uint32 score;
 } move;
 
 typedef struct movelist_s
@@ -52,7 +54,6 @@ typedef struct movelist_s
 	move m;
 
 	struct movelist_s *next;
-	struct movelist_s *child;
 } movelist;
 
 extern movelist *moveroot;

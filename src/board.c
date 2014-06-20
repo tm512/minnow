@@ -86,14 +86,18 @@ void board_initialize (const char *fen)
 		curboard->squares [i].piece = NULL;
 	}
 
-	// initialize pieces
+	// initialize pieces and sort scores
 	for (int i = 0; i < 32; i++)
 	{
 		curboard->pieces [i].type = pt_none;
 		curboard->pieces [i].side = (i > 15);
 		curboard->pieces [i].flags = 0;
 		curboard->pieces [i].square = 0;
+		curboard->victim [i] = 0;
+		curboard->attack [i] = 0;
 	}
+
+	curboard->attack [32] = curboard->victim [32] = 0;
 
 	// start walking through the string
 
@@ -124,26 +128,38 @@ void board_initialize (const char *fen)
 				case 'P':
 					curboard->pieces [idx [side]].type = pt_pawn;
 					curboard->pieces [idx [side]].movefunc = move_pawnmove;
+					curboard->victim [idx [side]] = 1;
+					curboard->attack [idx [side]] = 600;
 				break;
 				case 'N':
 					curboard->pieces [idx [side]].type = pt_knight;
 					curboard->pieces [idx [side]].movefunc = move_knightmove;
+					curboard->victim [idx [side]] = 2;
+					curboard->attack [idx [side]] = 500;
 				break;
 				case 'B':
 					curboard->pieces [idx [side]].type = pt_bishop;
 					curboard->pieces [idx [side]].movefunc = move_bishopmove;
+					curboard->victim [idx [side]] = 3;
+					curboard->attack [idx [side]] = 400;
 				break;
 				case 'R':
 					curboard->pieces [idx [side]].type = pt_rook;
 					curboard->pieces [idx [side]].movefunc = move_rookmove;
+					curboard->victim [idx [side]] = 5;
+					curboard->attack [idx [side]] = 300;
 				break;
 				case 'Q':
 					curboard->pieces [idx [side]].type = pt_queen;
 					curboard->pieces [idx [side]].movefunc = move_queenmove;
+					curboard->victim [idx [side]] = 6;
+					curboard->attack [idx [side]] = 200;
 				break;
 				case 'K':
 					curboard->pieces [idx [side]].type = pt_king;
 					curboard->pieces [idx [side]].movefunc = move_kingmove;
+					curboard->victim [idx [side]] = 7;
+					curboard->attack [idx [side]] = 100;
 				break;
 			}
 
