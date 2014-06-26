@@ -264,52 +264,53 @@ uint8 board_squareattacked (uint8 sq)
 
 void board_print (void)
 {
-	uint8 rank = 0;
+	uint8 rank = 8;
 	square *sq;
-	printf ("\n  |a|b|c|d|e|f|g|h|");
-	for (int i = 20; i < 100; i++)
+
+	printf ("\n   a b c d e f g h\n");
+
+	for (int i = 91; i > 20; i -= 10) // for each rank
 	{
-		sq = &curboard->squares [i];
-		if (i % 10 == 0)
-			printf ("\n|%i|", ++rank);
-
-		if (sq->padding)
-			continue;
-		else if (sq->piece && (sq->piece->flags & pf_taken) == 0)
+		printf ("\n%u  ", rank--);
+		for (int j = 0; j < 8; j++)
 		{
-			if (!sq->piece->side)
-				printf ("\033[1m");
+			uint8 side;
+			sq = &curboard->squares [i + j];
 
-			switch (sq->piece->type)
+			if (sq->piece && (sq->piece->flags & pf_taken) == 0)
 			{
-				case pt_pawn:
-					putchar ('p');
-				break;
-				case pt_knight:
-					putchar ('n');
-				break;
-				case pt_bishop:
-					putchar ('b');
-				break;
-				case pt_rook:
-					putchar ('r');
-				break;
-				case pt_queen:
-					putchar ('q');
-				break;
-				case pt_king:
-					putchar ('k');
-				break;
+				if (sq->piece->side)
+					side = 32; // 32 == 'a' - 'A'
+				else
+					side = 0;
+	
+				switch (sq->piece->type)
+				{
+					case pt_pawn:
+						putchar ('P' + side);
+					break;
+					case pt_knight:
+						putchar ('N' + side);
+					break;
+					case pt_bishop:
+						putchar ('B' + side);
+					break;
+					case pt_rook:
+						putchar ('R' + side);
+					break;
+					case pt_queen:
+						putchar ('Q' + side);
+					break;
+					case pt_king:
+						putchar ('K' + side);
+					break;
+				}
 			}
+			else
+				putchar ('.');
 
-			if (!sq->piece->side)
-				printf ("\033[0m");
-		}
-		else
 			putchar (' ');
-
-		if ((i + 1) % 10)
-			putchar ('|');
+		}
 	}
 
 	putchar ('\n');

@@ -59,7 +59,7 @@ int main (void)
 
 		if (!strncmp (line, "pos", 3))
 		{
-			if (!strncmp (line + 4, "startpos", 8))
+			if (!strncmp (line + 4, "start", 5))
 				board_initialize (startpos);
 			else
 				board_initialize (line + 4);
@@ -69,6 +69,12 @@ int main (void)
 
 		if (!strncmp (line, "perft", 5))
 		{
+			if (!curboard)
+			{
+				printf ("position unset, using the default\n");
+				board_initialize (startpos);
+			}
+				
 			clock_t start = clock ();
 			uint64 count = perft (atoi (&line [6]), atoi (&line [6]));
 			printf ("perft: %i (took %f seconds)\n", count, (float)(clock () - start) / CLOCKS_PER_SEC);
@@ -76,6 +82,12 @@ int main (void)
 
 		if (!strncmp (line, "search", 6))
 		{
+			if (!curboard)
+			{
+				printf ("position unset, using the default\n");
+				board_initialize (startpos);
+			}
+
 			uint64 start = time_get ();
 			int16 score = search (atoi (&line [7]), 0, NULL);
 			printf ("score: %i (search took %f seconds)\n", score, time_since_sec (start));
