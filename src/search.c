@@ -215,7 +215,6 @@ uint64 perft (uint8 depth, uint8 start)
 
 	while (it)
 	{
-		printf ("%u\n", it->m.score);
 		move_apply (&it->m);
 
 		if (!board_squareattacked (curboard->kings [!curboard->side]->square))
@@ -227,7 +226,7 @@ uint64 perft (uint8 depth, uint8 start)
 			{
 				char notation [6];
 				move_print (&it->m, notation);
-				//printf ("%s %u\n", notation, add);
+				printf ("%s %u\n", notation, add);
 			}
 
 			if (depth == 1 && (it->m.special == ms_kcast || it->m.special == ms_qcast))

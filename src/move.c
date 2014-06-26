@@ -552,7 +552,6 @@ movelist *move_order (movelist *list)
 	return list;
 	#endif
 
-	#if 1
 	movelist *slow, *fast, *half;
 	slow = fast = list;
 
@@ -569,32 +568,6 @@ movelist *move_order (movelist *list)
 	slow->next = NULL;
 
 	return merge (move_order (list), move_order (half));
-
-	#else
-	movelist *sorted = NULL;
-
-	while (list)
-	{   
-		movelist *head = list, **trail = &sorted;
-
-		list = list->next;
-
-		while (1) 
-		{
-			// move the head?
-			if (!(*trail) || head->m.score > (*trail)->m.score)
-			{
-				head->next = *trail;
-				*trail = head;
-				break;
-			}
-			else
-				trail = &(*trail)->next;
-		}
-	}
-
-	return sorted;
-	#endif
 }
 
 // generate child nodes based on the current board
