@@ -65,7 +65,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		return evaluate (alpha, beta);
 	}
 
-	it = m = move_genlist ();
+	it = m = move_order (move_genlist ());
 
 	if (oldpv && oldpv->nodes > 0 && depth > 1 && oldpv->moves [start - depth].square != 0)
 	{
@@ -210,11 +210,12 @@ uint64 perft (uint8 depth, uint8 start)
 	if (depth == 0)
 		return 1;
 
-	m = move_genlist ();
+	m = move_order (move_genlist ());
 	it = m;
 
 	while (it)
 	{
+		printf ("%u\n", it->m.score);
 		move_apply (&it->m);
 
 		if (!board_squareattacked (curboard->kings [!curboard->side]->square))
@@ -226,8 +227,7 @@ uint64 perft (uint8 depth, uint8 start)
 			{
 				char notation [6];
 				move_print (&it->m, notation);
-				//printf ("%s: %u nodes\n", notation, add);
-				printf ("%s %u\n", notation, add);
+				//printf ("%s %u\n", notation, add);
 			}
 
 			if (depth == 1 && (it->m.special == ms_kcast || it->m.special == ms_qcast))

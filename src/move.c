@@ -496,7 +496,6 @@ movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 	ret->m.square = square;
 	ret->m.from = from;
 	ret->m.special = 0;
-	ret->m.score = curboard->victim [taken] + curboard->attack [piece];
 
 	ret->next = NULL;
 
@@ -513,10 +512,7 @@ void move_clearnodes (movelist *m)
 
 	// don't free this one until we clean out all that it links to
 	if (m->next)
-	{
 		move_clearnodes (m->next);
-	//	m->next = NULL;
-	}
 
 	m->next = nodes;
 	nodes = m;
@@ -524,8 +520,57 @@ void move_clearnodes (movelist *m)
 	numnodes --;
 }
 
+static inline movelist *merge (movelist *left, movelist *right)
+{
+	movelist ret = { .next = NULL }, *it;
+	it = &ret;
+
+	while (left && right)
+	{
+		if (left->m.score > right->m.score)
+		{
+			it->next = left;
+			left = left->next;
+		}
+		else
+		{
+			it->next = right;
+			right = right->next;
+		}
+
+		it = it->next;
+	}
+
+	it->next = left ? left : right;
+
+	return ret.next;
+}
+
 movelist *move_order (movelist *list)
 {
+	#ifdef NOSORT
+	return list;
+	#endif
+
+	#if 1
+	movelist *slow, *fast, *half;
+	slow = fast = list;
+
+	if (!list || !list->next)
+		return list;
+
+	while (fast->next && fast->next->next)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+	}
+
+	half = slow->next;
+	slow->next = NULL;
+
+	return merge (move_order (list), move_order (half));
+
+	#else
 	movelist *sorted = NULL;
 
 	while (list)
@@ -537,7 +582,7 @@ movelist *move_order (movelist *list)
 		while (1) 
 		{
 			// move the head?
-			if (!(*trail) || head->m.score < (*trail)->m.score)
+			if (!(*trail) || head->m.score > (*trail)->m.score)
 			{
 				head->next = *trail;
 				*trail = head;
@@ -549,6 +594,7 @@ movelist *move_order (movelist *list)
 	}
 
 	return sorted;
+	#endif
 }
 
 // generate child nodes based on the current board
@@ -581,7 +627,15 @@ movelist *move_genlist (void)
 		}
 	}
 
-	return move_order (ret);
+	// score moves
+	it = ret;
+	while (it)
+	{
+		it->m.score = curboard->victim [it->m.taken] + curboard->attack [it->m.piece];
+		it = it->next;
+	}
+
+	return ret;
 }
 
 void move_print (move *m, char *c)
