@@ -24,11 +24,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+//#define NDEBUG
+#include <assert.h>
 
 #include "int.h"
 #include "board.h"
 #include "move.h"
 #include "values.h"
+#include "hash.h"
 
 static const uint32 maxnodes = 8192;
 
@@ -45,6 +48,7 @@ void move_apply (move *m)
 	// unset piece on the square we're moving from
 	curboard->squares [m->from].piece = NULL;
 	curboard->score [curboard->side] -= posvals [curboard->side] [curboard->pieces [m->piece].type] [m->from];
+	poskey ^= keytable [(curboard->side * 720) + ((curboard->pieces [m->piece].type - 1) * 120) + m->from];
 
 	// set our piece on the new square
 	curboard->squares [m->square].piece = &curboard->pieces [m->piece];
@@ -59,28 +63,41 @@ void move_apply (move *m)
 	if (m->special == ms_kcast)
 	{
 		curboard->cast [curboard->side] [1] = 0;
+		poskey ^= castkeys [curboard->side * 2 + 1];
 		piece *rook = curboard->rooks [curboard->side] [1];
 		curboard->score [curboard->side] -= posvals [curboard->side] [pt_rook] [rook->square];
+		poskey ^= keytable [(curboard->side * 720) + ((pt_rook - 1) * 120) + rook->square];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square - 1].piece = rook;
 		rook->square = m->square - 1;
 		curboard->score [curboard->side] += posvals [curboard->side] [pt_rook] [rook->square];
+		poskey ^= keytable [(curboard->side * 720) + ((pt_rook - 1) * 120) + rook->square];
 	}
 
 	// queenside castling
 	if (m->special == ms_qcast)
 	{
 		curboard->cast [curboard->side] [0] = 0;
+		poskey ^= castkeys [curboard->side * 2];
 		piece *rook = curboard->rooks [curboard->side] [0];
 		curboard->score [curboard->side] -= posvals [curboard->side] [pt_rook] [rook->square];
+		poskey ^= keytable [(curboard->side * 720) + ((pt_rook - 1) * 120) + rook->square];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square + 1].piece = rook;
 		rook->square = m->square + 1;
 		curboard->score [curboard->side] += posvals [curboard->side] [pt_rook] [rook->square];
+		poskey ^= keytable [(curboard->side * 720) + ((pt_rook - 1) * 120) + rook->square];
 	}
 
+	// unset old en passant
+	if (history [htop - 1].special == ms_enpas)
+		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
+
 	if (m->special == ms_enpas)
+	{
 		curboard->enpas = &curboard->pieces [m->piece];
+		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
+	}
 	else
 		curboard->enpas = NULL;
 
@@ -106,6 +123,7 @@ void move_apply (move *m)
 	}
 
 	curboard->score [curboard->side] += posvals [curboard->side] [curboard->pieces [m->piece].type] [m->square];
+	poskey ^= keytable [(curboard->side * 720) + ((curboard->pieces [m->piece].type - 1) * 120) + m->square];
 
 	// taking a piece?
 	if (m->taken < 32)
@@ -116,9 +134,11 @@ void move_apply (move *m)
 
 		curboard->score [!curboard->side] -= piecevals [curboard->pieces [m->taken].type];
 		curboard->score [!curboard->side] -= posvals [!curboard->side] [curboard->pieces [m->taken].type] [curboard->pieces [m->taken].square];
+		poskey ^= keytable [(!curboard->side * 720) + ((curboard->pieces [m->taken].type - 1) * 120) + curboard->pieces [m->taken].square];
 	}
 
 	// switch sides
+	poskey ^= sidekey;
 	curboard->side = !curboard->side;
 }
 
@@ -129,6 +149,7 @@ void move_make (move *m)
 	htop = 0;
 }
 
+extern uint64 startdepth;
 // undo a move
 void move_undo (move *m)
 {
@@ -139,6 +160,7 @@ void move_undo (move *m)
 	// unset piece on the square we're moving from
 	curboard->squares [m->square].piece = NULL;
 	curboard->score [!curboard->side] -= posvals [!curboard->side] [curboard->pieces [m->piece].type] [m->square];
+	poskey ^= keytable [(!curboard->side * 720) + ((curboard->pieces [m->piece].type - 1) * 120) + m->square];
 
 	// set our piece on the new square
 	curboard->squares [m->from].piece = &curboard->pieces [m->piece];
@@ -151,28 +173,41 @@ void move_undo (move *m)
 	if (m->special == ms_kcast)
 	{
 		curboard->cast [!curboard->side] [1] = 1;
+		poskey ^= castkeys [!curboard->side * 2 + 1];
 		piece *rook = curboard->rooks [!curboard->side] [1];
 		curboard->score [!curboard->side] -= posvals [!curboard->side] [pt_rook] [rook->square];
+		poskey ^= keytable [(!curboard->side * 720) + ((pt_rook - 1) * 120) + rook->square];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square + 1].piece = rook;
 		rook->square = m->square + 1;
 		curboard->score [!curboard->side] += posvals [!curboard->side] [pt_rook] [rook->square];
+		poskey ^= keytable [(!curboard->side * 720) + ((pt_rook - 1) * 120) + rook->square];
 	}
 
 	// queenside castling
 	if (m->special == ms_qcast)
 	{
 		curboard->cast [!curboard->side] [0] = 1;
+		poskey ^= castkeys [!curboard->side * 2];
 		piece *rook = curboard->rooks [!curboard->side] [0];
 		curboard->score [!curboard->side] -= posvals [!curboard->side] [pt_rook] [rook->square];
+		poskey ^= keytable [(!curboard->side * 720) + ((pt_rook - 1) * 120) + rook->square];
 		curboard->squares [rook->square].piece = NULL;
 		curboard->squares [m->square - 2].piece = rook;
 		rook->square = m->square - 2;
 		curboard->score [!curboard->side] += posvals [!curboard->side] [pt_rook] [rook->square];
+		poskey ^= keytable [(!curboard->side * 720) + ((pt_rook - 1) * 120) + rook->square];
 	}
 
+	// unset old en passant
+	if (history [htop + 1].special == ms_enpas)
+		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
+
 	if (history [htop].special == ms_enpas)
+	{
 		curboard->enpas = &curboard->pieces [history [htop].piece];
+		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
+	}
 	else
 		curboard->enpas = NULL;
 
@@ -183,6 +218,7 @@ void move_undo (move *m)
 	}
 
 	curboard->score [!curboard->side] += posvals [!curboard->side] [curboard->pieces [m->piece].type] [m->from];
+	poskey ^= keytable [(!curboard->side * 720) + ((curboard->pieces [m->piece].type - 1) * 120) + m->from];
 
 	// untake a piece
 	if (m->taken < 32) 
@@ -191,9 +227,11 @@ void move_undo (move *m)
 		curboard->squares [curboard->pieces [m->taken].square].piece = &curboard->pieces [m->taken];
 		curboard->score [curboard->side] += piecevals [curboard->pieces [m->taken].type];
 		curboard->score [curboard->side] += posvals [curboard->side] [curboard->pieces [m->taken].type] [curboard->pieces [m->taken].square];
+		poskey ^= keytable [(curboard->side * 720) + ((curboard->pieces [m->taken].type - 1) * 120) + curboard->pieces [m->taken].square];
 	}
 
 	// switch sides
+	poskey ^= sidekey;
 	curboard->side = !curboard->side;
 }
 
@@ -583,6 +621,8 @@ movelist *move_genlist (void)
 		// taken pieces can't move
 		if (curboard->pieces [i].flags & pf_taken || curboard->pieces [i].type == pt_none)
 			continue;
+
+		assert ((curboard->pieces [i].flags & pf_taken) == 0);
 
 		// generate all moves from this piece
 		m = curboard->pieces [i].movefunc (i, &tail);

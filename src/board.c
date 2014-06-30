@@ -30,8 +30,10 @@
 #include "move.h"
 #include "search.h"
 #include "values.h"
+#include "hash.h"
 
 board *curboard = NULL;
+//static uint64 poskey;
 
 // return the offset into the squares array of a certain coord
 inline uint8 board_getsquare (int8 file, int8 rank)
@@ -63,6 +65,7 @@ void board_initialize (const char *fen)
 
 	curboard = malloc (sizeof (board));
 	htop = 0;
+	poskey = 0;
 
 	// initialize castling stuff
 	curboard->cast [0] [0] = curboard->cast [0] [1] = 0;
@@ -234,6 +237,8 @@ void board_initialize (const char *fen)
 
 		curboard->enpas = curboard->squares [21 + epfile + eprank * 10].piece;
 	}
+
+	poskey = hash_poskey ();
 }
 
 uint8 attackhack = 0;

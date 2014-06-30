@@ -33,9 +33,9 @@
 #include "search.h"
 #include "timer.h"
 #include "eval.h"
+#include "hash.h"
 
 const char *startpos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-extern uint64 leafnodes;
 
 int main (void)
 {
@@ -44,6 +44,7 @@ int main (void)
 	printf ("minnow " GIT_VERSION "\n");
 	printf ("[c] 2014 Kyle Davis (tm512)\n\n");
 
+	hash_init (16 * 1024 * 1024);
 	move_initnodes ();
 
 	while (1)
@@ -65,6 +66,7 @@ int main (void)
 				board_initialize (line + 4);
 
 			board_print ();
+			printf ("key: %16llX\n", hash_poskey ());
 		}
 
 		if (!strncmp (line, "perft", 5))
@@ -91,6 +93,15 @@ int main (void)
 			uint64 start = time_get ();
 			int16 score = search (atoi (&line [7]), 0, NULL);
 			printf ("score: %i (search took %f seconds)\n", score, time_since_sec (start));
+		}
+
+		if (!strncmp (line, "hash", 4))
+			hash_init (atoi (&line [5]) * 1024 * 1024);
+
+		if (!strncmp (line, "disp", 4))
+		{
+			board_print ();
+			printf ("key: %16llX\n", hash_poskey ());
 		}
 
 		line [0] = 0;

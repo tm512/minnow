@@ -30,16 +30,21 @@
 #include "eval.h"
 #include "timer.h"
 #include "uci.h"
+#include "hash.h"
 #include "search.h"
+
+extern uint8 poshack;
 
 uint64 leafnodes = 0;
 uint64 endtime = 0;
 uint64 iterations = 0;
 int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha, int16 beta)
 {
-	movelist *m, *it, pvm;
+	movelist *m, *it, pvm, hbm;
 	pvlist stackpv = { 0 };
-	int16 score;
+	int16 score, bestscore = -30000;
+	move *hashbest = NULL, *bestmove = NULL;
+	uint8 etype = et_alpha;
 
 	// occasionally check if we need to abort
 	if (!(++iterations & 8191))
@@ -52,7 +57,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 
 		if (time_get () >= endtime || !ret)
 		{
-			printf ("interrupted search\n");
 			pv->nodes = 0;
 			return 31000;
 		}
@@ -62,8 +66,14 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 	{
 		leafnodes ++;
 		pv->nodes = 0;
-		return evaluate (alpha, beta);
+		score = evaluate (alpha, beta);
+		hash_store (depth, score, et_exact, NULL);
+		return score;
 	}
+
+	score = hash_probe (depth, alpha, beta, &hashbest);
+	if (score != -32000)
+		return score;
 
 	it = m = move_order (move_genlist ());
 
@@ -72,6 +82,13 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		pvm.m = oldpv->moves [start - depth];
 		pvm.next = m;
 		it = &pvm;
+	}
+
+	if (hashbest)
+	{
+		hbm.m = *hashbest;
+		hbm.next = it;
+		it = &hbm;
 	}
 
 	while (it)
@@ -98,29 +115,27 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 			return 31000;
 		}
 
-		#if 0
-		if (depth == start)
+		// seperate from alpha, keep track of the best move from this position, for the hash table
+		if (score > bestscore)
 		{
-			char notation [6];
-			move_print (&it->m, notation);
-			printf ("%s: %i\n", notation, score);
+			bestscore = score;
+			bestmove = &it->m;
 		}
-		#endif
 
-		#if 1
 		if (depth != start && score >= beta)
 		{
 			move_undo (&it->m);
+
+			hash_store (depth, beta, et_beta, bestmove);
 			move_clearnodes (m);
 
 			return beta;
 		}
-		#endif
 
-		// Make sure the move is legal if it exceeds alpha
 		if (score > alpha)
 		{
 			alpha = score;
+			etype = et_exact;
 
 			pv->moves [0] = it->m;
 			memcpy (pv->moves + 1, stackpv.moves, stackpv.nodes * sizeof (move));
@@ -131,6 +146,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		it = it->next;
 	}
 
+	hash_store (depth, alpha, etype, bestmove);
 	move_clearnodes (m);
 
 	return alpha;
