@@ -258,7 +258,10 @@ uint64 perft (uint8 depth, uint8 start)
 	move_clearnodes (m);
 
 	if (depth == start)
+	{
 		printf ("%u castles, %u promotions\n", castles, promos);
+		castles = promos = 0;
+	}
 
 	return count;
 }

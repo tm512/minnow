@@ -127,6 +127,7 @@ uint64 hash_poskey (void)
 
 int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 {
+//	uint64 poskey = hash_poskey ();
 	hashentry *e = &hashtable [poskey % entries];
 
 	if (e->key == poskey) // this entry (probably) came from the same position
@@ -147,6 +148,10 @@ int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 		{
 			*best = &e->best;
 
+		//	if (!curboard->squares [(*best)->from].piece)
+		//		printf ("piece type is %u\n", curboard->pieces [e->best.piece].type);
+			assert (curboard->squares [(*best)->from].piece);
+
 			// adjust pieces, since the indexes we stored might be invalid
 			(*best)->piece = curboard->squares [(*best)->from].piece - curboard->pieces;
 
@@ -165,6 +170,7 @@ int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 
 void hash_store (uint8 depth, int16 score, uint8 type, move *best)
 {
+//	uint64 poskey = hash_poskey ();
 	hashentry *e = &hashtable [poskey % entries];
 
 	e->key = poskey;

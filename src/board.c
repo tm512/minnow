@@ -177,9 +177,15 @@ void board_initialize (const char *fen)
 			if (p == 'R')
 			{
 				if (file == 0)
+				{
 					curboard->rooks [side] [0] = &curboard->pieces [idx [side]];
+					curboard->rooks [side] [0]->flags |= pf_moved;
+				}
 				else if (file == 7)
+				{
 					curboard->rooks [side] [1] = &curboard->pieces [idx [side]];
+					curboard->rooks [side] [1]->flags |= pf_moved;
+				}
 			}
 
 			// add to our score
@@ -200,21 +206,25 @@ void board_initialize (const char *fen)
 	it += 2;
 
 	// determine castling rights
-	while (*it != ' ')
+	while (*it != ' ' && *it != '\0')
 	{
 		switch (*it)
 		{
 			case 'K':
 				curboard->cast [0] [1] = 1;
+				curboard->rooks [0] [1]->flags &= ~pf_moved;
 			break;
 			case 'Q':
 				curboard->cast [0] [0] = 1;
+				curboard->rooks [0] [0]->flags &= ~pf_moved;
 			break;
 			case 'k':
 				curboard->cast [1] [1] = 1;
+				curboard->rooks [1] [1]->flags &= ~pf_moved;
 			break;
 			case 'q':
 				curboard->cast [1] [0] = 1;
+				curboard->rooks [1] [0]->flags &= ~pf_moved;
 			break;
 			default: break;
 		}
