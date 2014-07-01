@@ -36,12 +36,13 @@ typedef struct
 } hashentry;
 
 extern uint64 poskey;
-extern uint64 keytable [1440];
+extern uint64 keytable [3840];
 extern uint64 sidekey;
 extern uint64 castkeys [4];
 extern uint64 epkeys [8];
 
 void hash_init (uint64 bytes);
+void hash_clear (void);
 uint64 hash_poskey (void);
 int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best);
 void hash_store (uint8 depth, int16 score, uint8 type, move *best);

@@ -33,7 +33,7 @@
 uint64 xorstate;
 uint64 poskey = 0;
 
-uint64 keytable [1440];
+uint64 keytable [3840];
 uint64 sidekey;
 uint64 castkeys [4];
 uint64 epkeys [8];
@@ -51,14 +51,13 @@ uint64 xor (void)
 
 void hash_init (uint64 bytes)
 {
-	//xorstate = 0xac2c986921b37e05;
-	xorstate = 44;
+	xorstate = 0xac2c986921b37e05;
 
-	for (int i = 0; i < 1440; i++)
+	for (int i = 0; i < 3840; i++)
 		keytable [i] = xor ();
 
-	for (int i = 0; i < 1440; i++)
-	for (int j = 0; j < 1440; j++)
+	for (int i = 0; i < 3840; i++)
+	for (int j = 0; j < 3840; j++)
 		if (i != j && keytable [i] == keytable [j])
 			printf ("keytable collision\n");
 
@@ -78,15 +77,19 @@ void hash_init (uint64 bytes)
 		entries = 1;
 
 	hashtable = malloc (entries * sizeof (hashentry));
+	hash_clear ();
 
+	printf ("hash table initialized with %u entries\n", entries);
+}
+
+void hash_clear (void)
+{
 	for (uint64 i = 0; i < entries; i++)
 	{
 		hashtable [i].key = 0;
 		hashtable [i].type = et_null;
 		hashtable [i].best.square = 0;
 	}
-
-	printf ("hash table initialized with %u entries\n", entries);
 }
 
 uint8 poshack = 0;
@@ -101,7 +104,7 @@ uint64 hash_poskey (void)
 		if (curboard->pieces [i].flags & pf_taken || curboard->pieces [i].type == pt_none)
 			continue;
 
-		ret ^= keytable [(curboard->pieces [i].side * 6 * 120) + ((curboard->pieces [i].type - 1) * 120) + curboard->pieces [i].square];
+		ret ^= keytable [(i * 120) + curboard->pieces [i].square];
 	}
 
 	if (curboard->side)
@@ -145,24 +148,7 @@ int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 		}
 
 		if (e->best.square != 0)
-		{
 			*best = &e->best;
-
-		//	if (!curboard->squares [(*best)->from].piece)
-		//		printf ("piece type is %u\n", curboard->pieces [e->best.piece].type);
-			assert (curboard->squares [(*best)->from].piece);
-
-			// adjust pieces, since the indexes we stored might be invalid
-			(*best)->piece = curboard->squares [(*best)->from].piece - curboard->pieces;
-
-			if ((*best)->taken < 32)
-			{
-				if ((*best)->special == ms_enpascap)
-					(*best)->taken = curboard->enpas - curboard->pieces;
-				else
-					(*best)->taken = curboard->squares [(*best)->square].piece - curboard->pieces;
-			}
-		}
 	}
 
 	return -32000;

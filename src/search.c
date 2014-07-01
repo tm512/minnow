@@ -33,8 +33,6 @@
 #include "hash.h"
 #include "search.h"
 
-extern uint8 poshack;
-
 uint64 leafnodes = 0;
 uint64 endtime = 0;
 uint64 iterations = 0;
@@ -214,6 +212,7 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	if (best)
 		*best = oldpv.moves [0];
 
+	hash_clear ();
 	return oldret;
 }
 
