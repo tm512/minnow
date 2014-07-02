@@ -33,6 +33,7 @@ typedef struct pvlist_s
 
 int16 search (uint8 depth, uint64 maxtime, move *best);
 int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha, int16 beta);
+int16 quies (int16 alpha, int16 beta);
 uint64 perft (uint8 depth, uint8 start);
 
 #endif

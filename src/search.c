@@ -31,11 +31,13 @@
 #include "timer.h"
 #include "uci.h"
 #include "hash.h"
+#include "values.h"
 #include "search.h"
 
 uint64 leafnodes = 0;
 uint64 endtime = 0;
 uint64 iterations = 0;
+
 int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha, int16 beta)
 {
 	movelist *m, *it, pvm, hbm;
@@ -64,7 +66,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 	{
 		leafnodes ++;
 		pv->nodes = 0;
-		score = evaluate (alpha, beta);
+		score = quies (alpha, beta);
 		hash_store (depth, score, et_exact, NULL);
 		return score;
 	}
@@ -94,7 +96,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		if (it->m.taken == curboard->kings [!curboard->side] - curboard->pieces)
 		{
 			move_clearnodes (m);
-			return 15000 + depth;
+			return 15000;
 		}
 
 		move_apply (&it->m);
@@ -145,6 +147,45 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 	}
 
 	hash_store (depth, alpha, etype, bestmove);
+	move_clearnodes (m);
+
+	return alpha;
+}
+
+int16 quies (int16 alpha, int16 beta)
+{
+	movelist *m, *it;
+	int16 score = evaluate (alpha, beta);
+
+	if (score >= beta)
+		return beta;
+
+	if (score > alpha)
+		alpha = score;
+
+	m = it = move_order (move_genlist ());
+
+	while (it && it->m.taken != 32)
+	{
+		move_apply (&it->m);
+
+		score = -quies (-beta, -alpha);
+
+		if (score >= beta)
+		{
+			move_undo (&it->m);
+			move_clearnodes (m);
+
+			return beta;
+		}
+
+		if (score > alpha)
+			alpha = score;
+
+		move_undo (&it->m);
+		it = it->next;
+	}
+
 	move_clearnodes (m);
 
 	return alpha;
