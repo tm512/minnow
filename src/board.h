@@ -77,7 +77,10 @@ typedef struct board_s
 	piece *kings [2];
 	piece *enpas;
 
-	int16 score [2];
+	int16 matscore [2];
+	int16 posscore [2];
+	uint8 piececount [2] [7];
+	uint8 tradecount [2];
 
 	// move ordering:
 	uint32 victim [33];

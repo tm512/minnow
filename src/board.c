@@ -75,7 +75,14 @@ void board_initialize (const char *fen)
 
 	curboard->enpas = NULL;
 
-	curboard->score [0] = curboard->score [1] = 0;
+	// initialize scoring/eval stuff
+	curboard->matscore [0] = curboard->matscore [1] = 0;
+	curboard->posscore [0] = curboard->posscore [1] = 0;
+	curboard->tradecount [0] = curboard->tradecount [1] = 0;
+
+	for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 7; j++)
+			curboard->piececount [i] [j] = 0;
 
 	// initialize squares
 	for (int i = 0; i < 120; i++)
@@ -189,8 +196,9 @@ void board_initialize (const char *fen)
 			}
 
 			// add to our score
-			curboard->score [side] += piecevals [curboard->pieces [idx [side]].type];
-			curboard->score [side] += posvals [side] [curboard->pieces [idx [side]].type] [rank + file];
+			curboard->matscore [side] += piecevals [curboard->pieces [idx [side]].type];
+			curboard->posscore [side] += posvals [side] [curboard->pieces [idx [side]].type] [rank + file];
+			curboard->piececount [side] [curboard->pieces [idx [side]].type] ++;
 
 			curboard->pieces [idx [side]].square = rank + file;
 			curboard->squares [rank + file].piece = &curboard->pieces [idx [side]];

@@ -40,6 +40,7 @@ extern uint64 keytable [3840];
 extern uint64 sidekey;
 extern uint64 castkeys [4];
 extern uint64 epkeys [8];
+extern uint64 promokeys [32][4];
 
 void hash_init (uint64 bytes);
 void hash_clear (void);

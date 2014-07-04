@@ -167,6 +167,12 @@ int16 quies (int16 alpha, int16 beta)
 
 	while (it && it->m.taken != 32)
 	{
+		if (it->m.taken == curboard->kings [!curboard->side] - curboard->pieces)
+		{
+			move_clearnodes (m);
+			return 15000;
+		}
+
 		move_apply (&it->m);
 
 		score = -quies (-beta, -alpha);
@@ -208,7 +214,7 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	else
 		endtime = ~0; // never end
 
-	for (int i = 1; i <= depth; i++)
+	for (int i = 2; i <= depth; i++)
 	{
 		start = time_get ();
 		pvlist pv = { 0 };

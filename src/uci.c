@@ -36,6 +36,7 @@
 #include "move.h"
 #include "search.h"
 #include "timer.h"
+#include "hash.h"
 #include "uci.h"
 
 extern const char *startpos;
@@ -135,7 +136,10 @@ uint8 uci_parse (uint8 searching)
 	}
 
 	if (!strncmp (line, "disp", 4))
+	{
 		board_print ();
+		printf ("key: %16llX\n", hash_poskey ());
+	}
 
 	if (!strncmp (line, "quit", 4))
 		exit (0);

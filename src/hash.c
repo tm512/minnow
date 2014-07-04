@@ -37,6 +37,7 @@ uint64 keytable [3840];
 uint64 sidekey;
 uint64 castkeys [4];
 uint64 epkeys [8];
+uint64 promokeys [32][4];
 
 uint64 entries;
 hashentry *hashtable = NULL;
@@ -68,6 +69,10 @@ void hash_init (uint64 bytes)
 
 	for (int i = 0; i < 8; i++)
 		epkeys [i] = xor ();
+
+	for (int i = 0; i < 32; i++)
+	for (int j = 0; j < 4; j++)
+		promokeys [i] [j] = xor ();
 
 	entries = bytes / sizeof (hashentry);
 
