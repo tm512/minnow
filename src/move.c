@@ -744,10 +744,22 @@ movelist *move_genlist (void)
 	return ret;
 }
 
+static char promo (move *m)
+{
+	switch (m->special)
+	{
+		case ms_qpromo: return 'q';
+		case ms_rpromo: return 'r';
+		case ms_bpromo: return 'b';
+		case ms_npromo: return 'n';
+		default: return '\0';
+	}
+}
+
 void move_print (move *m, char *c)
 {
-	snprintf (c, 6, "%c%i%c%i", 'a' + board_getfile (m->from), 1 + board_getrank (m->from),
-	          'a' + board_getfile (m->square), 1 + board_getrank (m->square));
+	snprintf (c, 6, "%c%i%c%i%c", 'a' + board_getfile (m->from), 1 + board_getrank (m->from),
+	          'a' + board_getfile (m->square), 1 + board_getrank (m->square), promo (m));
 }
 
 // decode algebraic notation into a move struct
