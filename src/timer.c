@@ -28,7 +28,7 @@
 	#define _POSIX_C_SOURCE 199309L
 	#include <stdio.h>
 	#include <unistd.h>
-	#ifdef __FreeBSD__
+	#if defined(__FreeBSD__) || defined(__DragonFly__)
 		#include <sys/time.h>
 	#else
 		#include <time.h>
