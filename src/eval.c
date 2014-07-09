@@ -56,9 +56,9 @@ int16 evaluate (int16 alpha, int16 beta)
 		if (curboard->piececount [i] [pt_rook] == 2)
 			ret [i] -= 10;
 
-		// TODO: penalty for trading down and still having a worse score
-		// if (ret [i] < ret [!i])
-		//	ret [i] -= curboard->tradecount [i] * 10;
+		// we've been tracking the number of trades, and the winning side gets a small bonus for trading down
+		if (curboard->matscore [i] > curboard->matscore [!i])
+			ret [i] += 20 * curboard->trades;
 	}
 
 	return ret [curboard->side] - ret [!curboard->side];

@@ -33,7 +33,6 @@
 #include "hash.h"
 
 board *curboard = NULL;
-//static uint64 poskey;
 
 // return the offset into the squares array of a certain coord
 inline uint8 board_getsquare (int8 file, int8 rank)
@@ -78,7 +77,7 @@ void board_initialize (const char *fen)
 	// initialize scoring/eval stuff
 	curboard->matscore [0] = curboard->matscore [1] = 0;
 	curboard->posscore [0] = curboard->posscore [1] = 0;
-	curboard->tradecount [0] = curboard->tradecount [1] = 0;
+	curboard->trades = 0;
 
 	for (int i = 0; i < 2; i++)
 		for (int j = 0; j < 7; j++)

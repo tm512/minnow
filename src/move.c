@@ -180,9 +180,9 @@ void move_apply (move *m)
 			poskey ^= castkeys [!curboard->side * 2 + 1];
 		}
 
-		// track trading. if we're recapturing a piece, it counts as a trade for the other side
+		// every time we immediately recapture a piece, it counts as a trade.
 		if (htop > 1 && m->taken == history [htop - 1].piece && history [htop - 1].taken != 32)
-			curboard->tradecount [!curboard->side] ++;
+			curboard->trades ++;
 	}
 
 	// switch sides
@@ -323,8 +323,8 @@ void move_undo (move *m)
 			}
 		}
 
-		if (htop > 1 && m->taken == history [htop].piece && history [htop].taken != 32)
-			curboard->tradecount [curboard->side] --;
+		if (htop > 0 && m->taken == history [htop].piece && history [htop].taken != 32)
+			curboard->trades --;
 	}
 
 	// switch sides
