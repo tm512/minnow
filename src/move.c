@@ -197,6 +197,7 @@ void move_make (move *m)
 {
 	move_apply (m);
 	htop = 0;
+	histkeys [0] = poskey;
 }
 
 // undo a move
