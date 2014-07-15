@@ -34,6 +34,7 @@
 #include "values.h"
 #include "search.h"
 
+uint8 reptable [65536];
 uint64 leafnodes = 0;
 uint64 endtime = 0;
 uint64 iterations = 0;
@@ -45,6 +46,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 	int16 score, bestscore = -30000;
 	move *hashbest = NULL, *bestmove = NULL;
 	uint8 etype = et_alpha;
+	uint16 idx;
 
 	// occasionally check if we need to abort
 	if (!(++iterations & 8191))
@@ -101,6 +103,21 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 
 		move_apply (&it->m);
 
+		// check for repetition
+		idx = poskey % 65536;
+		reptable [idx] ++;
+
+		if (reptable [idx] > 1 && move_repcheck ())
+		{
+			reptable [idx] --;
+			move_undo (&it->m);
+
+			hash_store (depth, 0, et_exact, NULL);
+			move_clearnodes (m);
+
+			return 0;
+		}
+
 		if (it == &pvm)
 			score = -absearch (depth - 1, start, &stackpv, oldpv, -beta, -alpha);
 		else
@@ -129,6 +146,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 			hash_store (depth, beta, et_beta, bestmove);
 			move_clearnodes (m);
 
+			reptable [idx] --;
 			return beta;
 		}
 
@@ -142,6 +160,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 			pv->nodes = stackpv.nodes + 1;
 		}
 
+		reptable [idx] --;
 		move_undo (&it->m);
 		it = it->next;
 	}
@@ -205,6 +224,9 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 
 	pvlist oldpv = { 0 };
 
+	// bump the repetition count for the initial position
+	reptable [poskey % 65536] ++;
+
 	// Search "indefinitely"
 	if (depth == 0)
 		depth = 255;
@@ -259,6 +281,7 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	if (best)
 		*best = oldpv.moves [0];
 
+	reptable [poskey % 65536] --;
 	hash_clear ();
 	return oldret;
 }

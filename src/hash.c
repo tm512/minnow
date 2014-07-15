@@ -135,7 +135,6 @@ uint64 hash_poskey (void)
 
 int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 {
-//	uint64 poskey = hash_poskey ();
 	hashentry *e = &hashtable [poskey % entries];
 
 	if (e->key == poskey) // this entry (probably) came from the same position
@@ -148,8 +147,6 @@ int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 				return alpha;
 			else if (e->type == et_beta && e->score >= beta)
 				return beta;
-			else if (e->type == et_mate)
-				return 15000 + depth;
 		}
 
 		if (e->best.square != 0)
@@ -161,7 +158,6 @@ int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 
 void hash_store (uint8 depth, int16 score, uint8 type, move *best)
 {
-//	uint64 poskey = hash_poskey ();
 	hashentry *e = &hashtable [poskey % entries];
 
 	e->key = poskey;

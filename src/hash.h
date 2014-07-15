@@ -24,7 +24,7 @@
 #ifndef HASH_H__
 #define HASH_H__
 
-enum { et_null, et_exact, et_alpha, et_beta, et_mate };
+enum { et_null, et_exact, et_alpha, et_beta };
 
 typedef struct
 {

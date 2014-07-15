@@ -34,6 +34,7 @@
 static const uint32 maxnodes = 8192;
 
 move history [128];
+uint64 histkeys [128];
 uint8 htop = 0;
 uint64 numnodes = 0;
 
@@ -188,6 +189,7 @@ void move_apply (move *m)
 	// switch sides
 	poskey ^= sidekey;
 	curboard->side = !curboard->side;
+	histkeys [htop] = poskey;
 }
 
 // make a move, setting it as the current root for searching
@@ -816,4 +818,18 @@ void move_decode (const char *c, move *m)
 			}
 		}
 	}
+}
+
+// check for threefold repetition in the history
+uint8 move_repcheck (void)
+{
+	uint8 repcount = 0;
+
+	for (int i = 0; i < htop; i++)
+	{
+		if (histkeys [i] == poskey)
+			return 1;
+	}
+
+	return 0;
 }

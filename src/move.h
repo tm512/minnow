@@ -58,6 +58,7 @@ typedef struct movelist_s
 
 extern movelist *moveroot;
 extern move history [128];
+extern uint64 histkeys [128];
 extern uint8 htop;
 
 void move_apply (move *m);
@@ -70,6 +71,7 @@ movelist *move_order (movelist *list);
 movelist *move_genlist (void);
 void move_print (move *m, char *c);
 void move_decode (const char *c, move *m);
+uint8 move_repcheck (void);
 
 movelist *move_pawnmove (uint8 piece, movelist **tail);
 movelist *move_knightmove (uint8 piece, movelist **tail);
