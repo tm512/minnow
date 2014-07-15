@@ -34,8 +34,9 @@
 static const uint32 maxnodes = 8192;
 
 move history [128];
-uint64 histkeys [128];
+uint64 histkeys [512];
 uint8 htop = 0;
+uint16 hbot = 0;
 uint64 numnodes = 0;
 
 // applies a move to curboard
@@ -189,15 +190,16 @@ void move_apply (move *m)
 	// switch sides
 	poskey ^= sidekey;
 	curboard->side = !curboard->side;
-	histkeys [htop] = poskey;
+	histkeys [hbot + htop] = poskey;
 }
 
 // make a move, setting it as the current root for searching
 void move_make (move *m)
 {
 	move_apply (m);
+	hbot ++;
 	htop = 0;
-	histkeys [0] = poskey;
+	histkeys [hbot] = poskey;
 }
 
 // undo a move
@@ -824,9 +826,7 @@ void move_decode (const char *c, move *m)
 // check for threefold repetition in the history
 uint8 move_repcheck (void)
 {
-	uint8 repcount = 0;
-
-	for (int i = 0; i < htop; i++)
+	for (int i = 0; i < hbot + htop; i++)
 	{
 		if (histkeys [i] == poskey)
 			return 1;

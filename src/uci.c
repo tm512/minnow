@@ -63,14 +63,26 @@ uint8 uci_parse (uint8 searching)
 	if (!strncmp (line, "isready", 7))
 		printf ("readyok\n");
 
+	if (!strncmp (line, "ucinewgame", 10))
+		hbot = htop = 0;
+
 	if (!strncmp (line, "position", 8))
 	{
 		char *posline = line + 9;
 
 		if (!strncmp (posline, "startpos", 8))
+		{
+			// assume new game
+			hbot = htop = 0;
 			board_initialize (startpos);
+		}
 		else if (!strncmp (posline, "fen", 3))
+		{
+			// assume we're making a move here
+			hbot ++;
+			htop = 0;
 			board_initialize (posline + 4);
+		}
 
 		// need to make some moves on this position as well?
 		posline = strstr (line, "moves");

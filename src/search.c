@@ -34,7 +34,7 @@
 #include "values.h"
 #include "search.h"
 
-uint8 reptable [65536];
+uint8 reptable [65536] = { 0 };
 uint64 leafnodes = 0;
 uint64 endtime = 0;
 uint64 iterations = 0;
@@ -224,8 +224,9 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 
 	pvlist oldpv = { 0 };
 
-	// bump the repetition count for the initial position
-	reptable [poskey % 65536] ++;
+	// set up repetition table
+	for (int i = 0; i <= hbot + htop; i++)
+		reptable [histkeys [i] % 65536] ++;
 
 	// Search "indefinitely"
 	if (depth == 0)
@@ -281,7 +282,9 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	if (best)
 		*best = oldpv.moves [0];
 
-	reptable [poskey % 65536] --;
+	for (int i = 0; i < 65536; i ++)
+		reptable [i] = 0;
+
 	hash_clear ();
 	return oldret;
 }
