@@ -24,6 +24,8 @@
 #ifndef EVAL_H__
 #define EVAL_H__
 
+extern int16 contempt;
+
 void eval_initdist (void);
 int16 evaluate (int16 alpha, int16 beta);
 

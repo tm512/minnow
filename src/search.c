@@ -117,7 +117,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		reptable [idx] ++;
 
 		if (reptable [idx] > 1 && move_repcheck ())
-			score = 0;
+			score = contempt;
 		else if (it == &pvm)
 			score = -absearch (depth - 1, start, &stackpv, oldpv, -beta, -alpha);
 		else
@@ -179,7 +179,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		else
 		{
 			curboard->side = !curboard->side;
-			return 0;
+			return contempt;
 		}
 	}
 
