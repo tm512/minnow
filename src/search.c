@@ -45,7 +45,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 	pvlist stackpv = { 0 };
 	int16 score, bestscore = -30000;
 	move *hashbest = NULL, *bestmove = NULL;
-	uint8 etype = et_alpha;
+	uint8 etype = et_alpha, legalmove = 0;
 	uint16 idx;
 
 	// occasionally check if we need to abort
@@ -103,6 +103,15 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 
 		move_apply (&it->m);
 
+		if (!legalmove && board_squareattacked (curboard->kings [!curboard->side]->square))
+		{
+			move_undo (&it->m);
+			it = it->next;
+			continue;
+		}
+
+		legalmove = 1;
+
 		// check for repetition
 		idx = poskey % 65536;
 		reptable [idx] ++;
@@ -139,7 +148,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 			bestmove = &it->m;
 		}
 
-		if (depth != start && score >= beta)
+		if (score >= beta && depth != start)
 		{
 			move_undo (&it->m);
 
@@ -163,6 +172,24 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		reptable [idx] --;
 		move_undo (&it->m);
 		it = it->next;
+	}
+
+	// no legal moves available. check for stalemate
+	if (!legalmove)
+	{
+		curboard->side = !curboard->side;
+
+		move_clearnodes (m);
+		if (board_squareattacked (curboard->kings [!curboard->side]->square))
+		{
+			curboard->side = !curboard->side;
+			return -15000;
+		}
+		else
+		{
+			curboard->side = !curboard->side;
+			return 0;
+		}
 	}
 
 	hash_store (depth, alpha, etype, bestmove);
