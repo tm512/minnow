@@ -117,17 +117,8 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		reptable [idx] ++;
 
 		if (reptable [idx] > 1 && move_repcheck ())
-		{
-			reptable [idx] --;
-			move_undo (&it->m);
-
-			hash_store (depth, 0, et_exact, NULL);
-			move_clearnodes (m);
-
-			return 0;
-		}
-
-		if (it == &pvm)
+			score = 0;
+		else if (it == &pvm)
 			score = -absearch (depth - 1, start, &stackpv, oldpv, -beta, -alpha);
 		else
 			score = -absearch (depth - 1, start, &stackpv, NULL, -beta, -alpha);
