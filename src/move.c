@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "int.h"
 #include "board.h"
@@ -337,6 +338,40 @@ void move_undo (move *m)
 	curboard->side = !curboard->side;
 }
 
+void move_applynull (void)
+{
+	htop ++;
+	history [htop].piece = 0;
+	history [htop].taken = 32;
+	history [htop].square = 0;
+	history [htop].from = 0;
+	history [htop].special = 0;
+
+	// unset old en passant
+	if (history [htop - 1].special == ms_enpas)
+		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
+
+	curboard->enpas = NULL;
+
+	poskey ^= sidekey;
+	histkeys [hbot + htop] = poskey;
+}
+
+void move_undonull (void)
+{
+	htop --;
+
+	if (history [htop].special == ms_enpas)
+	{
+		curboard->enpas = &curboard->pieces [history [htop].piece];
+		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
+	}
+	else
+		curboard->enpas = NULL;
+
+	poskey ^= sidekey;
+}
+
 // move generators, returns a movelist or NULL in case there aren't moves for this piece
 static inline void setside (uint8 piece, uint8 *side, uint8 *notside)
 {
@@ -429,7 +464,7 @@ movelist *move_pawnmove (uint8 piece, movelist **tail)
 				it->m.special = ms_enpascap;
 
 			// moving onto the first rank of the opponent?
-			if ((sq + pawn2forward [side])->padding)
+			if (!attackhack && (sq + pawn2forward [side])->padding)
 			{
 				it->m.special = ms_qpromo;
 
@@ -623,7 +658,6 @@ void move_initnodes (void)
 		nodes [i].next = &nodes [i + 1];
 }
 
-uint64 calls = 0;
 movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 {
 	movelist *ret = nodes;

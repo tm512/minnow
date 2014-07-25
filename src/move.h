@@ -65,6 +65,8 @@ extern uint16 hbot;
 void move_apply (move *m);
 void move_make (move *m);
 void move_undo (move *m);
+void move_applynull (void);
+void move_undonull (void);
 void move_initnodes (void);
 movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from);
 void move_clearnodes (movelist *m);

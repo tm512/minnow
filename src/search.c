@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "int.h"
 #include "board.h"
@@ -39,14 +40,14 @@ uint64 leafnodes = 0;
 uint64 endtime = 0;
 uint64 iterations = 0;
 
-int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha, int16 beta)
+int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha, int16 beta, uint8 donull)
 {
 	movelist *m, *it, pvm, hbm;
 	pvlist stackpv = { 0 };
 	int16 score, bestscore = -30000;
 	move *hashbest = NULL, *bestmove = NULL;
-	uint8 etype = et_alpha, legalmove = 0;
-	uint16 idx;
+	uint8 etype = et_alpha;
+	uint16 idx, legalmoves = 0;
 
 	// occasionally check if we need to abort
 	if (!(++iterations & 8191))
@@ -73,6 +74,25 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		return score;
 	}
 
+	// try null move
+	#ifdef NULLMOVE
+	curboard->side = !curboard->side;
+	if (donull && depth >= 3 && !board_squareattacked (curboard->kings [!curboard->side]->square))
+	{
+		pvlist nullpv = { 0 };
+		move_applynull ();
+		score = -absearch (depth - 1 - 2, depth - 1 - 2, &nullpv, NULL, -beta, -beta + 1, 0);
+		move_undonull ();
+
+		if (score >= beta)
+		{
+			curboard->side = !curboard->side;
+			return beta;
+		}
+	}
+	curboard->side = !curboard->side;
+	#endif
+
 	score = hash_probe (depth, alpha, beta, &hashbest);
 	if (score != -32000)
 		return score;
@@ -98,19 +118,19 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		if (it->m.taken == curboard->kings [!curboard->side] - curboard->pieces)
 		{
 			move_clearnodes (m);
-			return 15000;
+			return 20000;
 		}
 
 		move_apply (&it->m);
 
-		if (!legalmove && board_squareattacked (curboard->kings [!curboard->side]->square))
+		if (legalmoves == 0 && board_squareattacked (curboard->kings [!curboard->side]->square))
 		{
 			move_undo (&it->m);
 			it = it->next;
 			continue;
 		}
 
-		legalmove = 1;
+		legalmoves ++;
 
 		// check for repetition
 		idx = poskey % 65536;
@@ -119,9 +139,9 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		if (reptable [idx] > 1 && move_repcheck ())
 			score = contempt;
 		else if (it == &pvm)
-			score = -absearch (depth - 1, start, &stackpv, oldpv, -beta, -alpha);
+			score = -absearch (depth - 1, start, &stackpv, oldpv, -beta, -alpha, 1);
 		else
-			score = -absearch (depth - 1, start, &stackpv, NULL, -beta, -alpha);
+			score = -absearch (depth - 1, start, &stackpv, NULL, -beta, -alpha, 1);
 
 		if (score == -31000)
 		{
@@ -165,8 +185,8 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		it = it->next;
 	}
 
-	// no legal moves available. check for stalemate
-	if (!legalmove)
+	// no legal moves available. check for mate
+	if (legalmoves == 0)
 	{
 		curboard->side = !curboard->side;
 
@@ -207,7 +227,7 @@ int16 quies (int16 alpha, int16 beta)
 		if (it->m.taken == curboard->kings [!curboard->side] - curboard->pieces)
 		{
 			move_clearnodes (m);
-			return 15000;
+			return 20000;
 		}
 
 		move_apply (&it->m);
@@ -259,7 +279,7 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	{
 		start = time_get ();
 		pvlist pv = { 0 };
-		ret = absearch (i, i, &pv, &oldpv, -30000, 30000);
+		ret = absearch (i, i, &pv, &oldpv, -30000, 30000, 1);
 
 		ittime = time_since (start);
 
