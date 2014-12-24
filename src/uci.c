@@ -40,6 +40,8 @@
 #include "uci.h"
 
 extern const char *startpos;
+extern char line [8192];
+
 int uci_main (void)
 {
 	setbuf (stdin, NULL);
@@ -57,7 +59,6 @@ int uci_main (void)
 
 uint8 uci_parse (uint8 searching)
 {
-	char line [8192];
 	fgets (line, 8192, stdin);
 
 	if (!strncmp (line, "isready", 7))

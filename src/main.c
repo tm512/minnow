@@ -36,11 +36,10 @@
 #include "hash.h"
 
 const char *startpos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+char line [8192]; // I think this will be enough to buffer a line
 
 int main (void)
 {
-	char line [8192]; // I think this will be enough to buffer a line
-
 	printf ("minnow " GIT_VERSION "\n");
 	printf ("[c] 2014 Kyle Davis (tm512)\n\n");
 
@@ -101,6 +100,12 @@ int main (void)
 
 		if (!strncmp (line, "disp", 4))
 		{
+			if (!curboard)
+			{
+				printf ("position unset, using the default\n");
+				board_initialize (startpos);
+			}
+
 			board_print ();
 			printf ("key: %16llX\n", hash_poskey ());
 		}
