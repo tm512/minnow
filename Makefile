@@ -23,7 +23,7 @@ profile: LDFLAGS_ += -pg
 profile: $(OUT)
 
 strip: release
-	@$(STRIP) $(OUT)
+	$(STRIP) $(OUT)
 
 SRC = $(wildcard src/*.c)
 HDR = $(wildcard src/*.h)
