@@ -40,9 +40,9 @@ uint64 leafnodes = 0;
 uint64 endtime = 0;
 uint64 iterations = 0;
 
-int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha, int16 beta, uint8 donull)
+int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, uint8 donull)
 {
-	movelist *m, *it, pvm, hbm;
+	movelist *m, *it, hbm;
 	pvlist stackpv = { 0 };
 	int16 score, bestscore = -30000;
 	move *hashbest = NULL, *bestmove = NULL;
@@ -81,7 +81,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 	{
 		pvlist nullpv = { 0 };
 		move_applynull ();
-		score = -absearch (depth - 1 - 2, depth - 1 - 2, &nullpv, NULL, -beta, -beta + 1, 0);
+		score = -absearch (depth - 1 - 2, depth - 1 - 2, &nullpv, -beta, -beta + 1, 0);
 		move_undonull ();
 
 		if (score >= beta)
@@ -98,13 +98,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 		return score;
 
 	it = m = move_order (move_genlist ());
-
-	if (oldpv && oldpv->nodes > 0 && depth > 1 && oldpv->moves [start - depth].square != 0)
-	{
-		pvm.m = oldpv->moves [start - depth];
-		pvm.next = m;
-		it = &pvm;
-	}
 
 	if (hashbest)
 	{
@@ -138,10 +131,8 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, pvlist *oldpv, int16 alpha
 
 		if (reptable [idx] > 1 && move_repcheck ())
 			score = contempt;
-		else if (it == &pvm)
-			score = -absearch (depth - 1, start, &stackpv, oldpv, -beta, -alpha, 1);
 		else
-			score = -absearch (depth - 1, start, &stackpv, NULL, -beta, -alpha, 1);
+			score = -absearch (depth - 1, start, &stackpv, -beta, -alpha, 1);
 
 		if (score == -31000)
 		{
@@ -260,8 +251,6 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	int16 ret, oldret;
 	uint64 start, ittime;
 
-	pvlist oldpv = { 0 };
-
 	// set up repetition table
 	for (int i = 0; i <= hbot + htop; i++)
 		reptable [histkeys [i] % 65536] ++;
@@ -279,29 +268,30 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	{
 		start = time_get ();
 		pvlist pv = { 0 };
-		ret = absearch (i, i, &pv, &oldpv, -30000, 30000, 1);
+		ret = absearch (i, i, &pv, -30000, 30000, 1);
 
 		ittime = time_since (start);
 
 		if (pv.nodes > 0)
 		{
-			oldpv = pv;
-
 			if (ittime == 0)
 				ittime = 1;
 
 			// print UCI info
 			printf ("info depth %u score cp %i time %u nodes %u nps %u pv ", i, ret, ittime, leafnodes, (leafnodes * 1000) / ittime);
 
-			for (int j = 0; j < oldpv.nodes; j++)
+			for (int j = 0; j < pv.nodes; j++)
 			{
 				char notation [6];
-				move_print (&oldpv.moves [j], notation);
+				move_print (&pv.moves [j], notation);
 				printf ("%s ", notation);
 			}
 
 			printf ("\n");
 			fflush (stdout);
+
+			if (best)
+				*best = pv.moves [0];
 		}
 
 		leafnodes = 0;
@@ -316,9 +306,6 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 		if (time_get () >= endtime - ittime * 2)
 			break;
 	}
-
-	if (best)
-		*best = oldpv.moves [0];
 
 	for (int i = 0; i < 65536; i ++)
 		reptable [i] = 0;

@@ -46,7 +46,7 @@ typedef struct move_s
 	uint8 from;
 	uint8 special;
 
-	uint32 score;
+	uint16 score;
 } move;
 
 typedef struct movelist_s

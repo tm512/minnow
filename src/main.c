@@ -95,6 +95,15 @@ int main (void)
 			printf ("score: %i (search took %f seconds)\n", score, time_since_sec (start));
 		}
 
+		if (!strncmp (line, "speedtest", 9))
+		{
+			// run 10 loops, print average speed
+			uint64 start = time_get ();
+			for (int i = 0; i < 10; i++)
+				search (7, 0, NULL);
+			printf ("avg %f seconds per search\n", time_since_sec (start) / 10.0);
+		}
+
 		if (!strncmp (line, "hash", 4))
 			hash_init (atoi (&line [5]) * 1024 * 1024);
 

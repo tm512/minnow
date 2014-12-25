@@ -83,8 +83,8 @@ typedef struct board_s
 	uint8 trades;
 
 	// move ordering:
-	uint32 victim [33];
-	uint32 attack [33];
+	uint16 victim [33];
+	uint16 attack [33];
 } board;
 
 extern board *curboard;
