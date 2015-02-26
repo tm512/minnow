@@ -22,6 +22,7 @@
    OTHER DEALINGS IN THE SOFTWARE. */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
@@ -46,7 +47,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 	pvlist stackpv = { 0 };
 	int16 score, bestscore = -30000;
 	move *hashbest = NULL, *bestmove = NULL;
-	uint8 etype = et_alpha;
+	uint8 etype = et_alpha, minors, majors;
 	uint16 idx, legalmoves = 0;
 
 	// occasionally check if we need to abort
@@ -76,15 +77,18 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 
 	// try null move
 	#ifdef NULLMOVE
+	minors = curboard->piececount [!curboard->side] [pt_knight] + curboard->piececount [!curboard->side] [pt_bishop];
+	majors = curboard->piececount [!curboard->side] [pt_rook] + curboard->piececount [!curboard->side] [pt_queen];
 	curboard->side = !curboard->side;
-	if (donull && depth >= 3 && !board_squareattacked (curboard->kings [!curboard->side]->square))
+	if (donull && depth >= 3 && curboard->piececount [!curboard->side] [pt_pawn] > 1 && (minors > 1 || majors > 0) &&
+	    !board_squareattacked (curboard->kings [!curboard->side]->square))
 	{
 		pvlist nullpv = { 0 };
 		move_applynull ();
 		score = -absearch (depth - 1 - 2, depth - 1 - 2, &nullpv, -beta, -beta + 1, 0);
 		move_undonull ();
 
-		if (score >= beta)
+		if (score >= beta && abs (score) != 20000)
 		{
 			curboard->side = !curboard->side;
 			return beta;
@@ -134,13 +138,13 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 		else
 			score = -absearch (depth - 1, start, &stackpv, -beta, -alpha, 1);
 
-		if (score == -31000)
+		if (score == -31000 || (!donull && score == -20000))
 		{
 			move_undo (&it->m);
 			move_clearnodes (m);
 
 			pv->nodes = 0;
-			return 31000;
+			return -score;
 		}
 
 		// seperate from alpha, keep track of the best move from this position, for the hash table
@@ -248,7 +252,7 @@ int16 quies (int16 alpha, int16 beta)
 // iterative deepening
 int16 search (uint8 depth, uint64 maxtime, move *best)
 {
-	int16 ret, oldret;
+	int16 ret = 0, oldret;
 	uint64 start, ittime;
 
 	// set up repetition table
@@ -264,7 +268,7 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	else
 		endtime = ~0; // never end
 
-	for (int i = 2; i <= depth; i++)
+	for (int i = 2; i <= depth && abs (ret) < 15000; i++)
 	{
 		start = time_get ();
 		pvlist pv = { 0 };
