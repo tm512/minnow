@@ -76,7 +76,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 	}
 
 	// try null move
-	#ifdef NULLMOVE
 	minors = curboard->piececount [!curboard->side] [pt_knight] + curboard->piececount [!curboard->side] [pt_bishop];
 	majors = curboard->piececount [!curboard->side] [pt_rook] + curboard->piececount [!curboard->side] [pt_queen];
 	curboard->side = !curboard->side;
@@ -95,7 +94,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 		}
 	}
 	curboard->side = !curboard->side;
-	#endif
 
 	score = hash_probe (depth, alpha, beta, &hashbest);
 	if (score != -32000)
