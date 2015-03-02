@@ -293,8 +293,8 @@ void move_undo (move *m)
 	if (m->special >= ms_qpromo && m->special <= ms_npromo)
 	{
 		curboard->matscore [!curboard->side] -= piecevals [curboard->pieces [m->piece].type] - piecevals [pt_pawn];
-		curboard->piececount [curboard->side] [curboard->pieces [m->piece].type] --;
-		curboard->piececount [curboard->side] [pt_pawn] ++;
+		curboard->piececount [!curboard->side] [curboard->pieces [m->piece].type] --;
+		curboard->piececount [!curboard->side] [pt_pawn] ++;
 
 		curboard->pieces [m->piece].type = pt_pawn;
 		curboard->pieces [m->piece].movefunc = move_pawnmove;
