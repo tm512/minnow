@@ -809,7 +809,10 @@ void move_decode (const char *c, move *m)
 	m->square = 21 + (c [2] - 'a') + (c [3] - '1') * 10;
 
 	m->piece = curboard->squares [m->from].piece - curboard->pieces;
-	m->taken = curboard->squares [m->square].piece - curboard->pieces;
+	if (curboard->squares [m->square].piece)
+		m->taken = curboard->squares [m->square].piece - curboard->pieces;
+	else
+		m->taken = 32;
 
 	// determine move special, if anything
 	if (curboard->squares [m->from].piece->type == pt_king)
