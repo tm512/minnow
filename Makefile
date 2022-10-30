@@ -12,13 +12,17 @@ OUT = minnow
 .PHONY: default release debug profile strip clean
 default: release
 
-release: CFLAGS_ += -O2 -g3
+release: OPT = 3
+release: DBG = 0
 release: $(OUT)
 
-debug: CFLAGS_ += -O0 -g3
+debug: OPT = 0
+debug: DBG = 3
 debug: $(OUT)
 
-profile: CFLAGS_ += -O0 -g3 -pg
+profile: OPT = 1
+profile: DBG = 3
+profile: CFLAGS_ += -pg
 profile: LDFLAGS_ += -pg
 profile: $(OUT)
 
@@ -31,7 +35,7 @@ OBJ = $(patsubst src/%.c,$(OBJDIR)/%.o,$(SRC))
 
 $(OBJDIR)/%.o: src/%.c $(HDR)
 	@mkdir -p $(OBJDIR)
-	$(CC) -o $@ $(CFLAGS_) -c $<
+	$(CC) -o $@ $(CFLAGS_) -O$(OPT) -g$(DBG) -c $<
 
 $(OUT): $(OBJ)
 	$(CC) -o $(OUT) $(OBJ) $(LDFLAGS_)
