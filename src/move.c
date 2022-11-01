@@ -32,7 +32,9 @@
 #include "values.h"
 #include "hash.h"
 
-static const uint32 maxnodes = 8192;
+#define NOSORT 0
+
+const uint32 maxnodes = 8192;
 
 move history [128];
 uint64 histkeys [512];
@@ -720,7 +722,7 @@ static inline movelist *merge (movelist *left, movelist *right)
 
 movelist *move_order (movelist *list)
 {
-	#ifdef NOSORT
+	#if NOSORT
 	return list;
 	#endif
 

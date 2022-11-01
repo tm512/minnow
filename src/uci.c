@@ -143,7 +143,7 @@ uint8 uci_parse (uint8 searching)
 				maxtime = time_alloc (wtime, btime);
 		}
 
-		search (depth, maxtime, &best);
+		search (depth, maxtime, &best, 0);
 		move_print (&best, c);
 		printf ("bestmove %s\n", c);
 	}

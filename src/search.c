@@ -261,7 +261,7 @@ int16 quies (int16 alpha, int16 beta)
 }
 
 // iterative deepening
-int16 search (uint8 depth, uint64 maxtime, move *best)
+int16 search (uint8 depth, uint64 maxtime, move *best, int hashclear)
 {
 	int16 ret = 0, oldret;
 	uint64 start, ittime;
@@ -325,7 +325,9 @@ int16 search (uint8 depth, uint64 maxtime, move *best)
 	for (int i = 0; i < 65536; i ++)
 		reptable [i] = 0;
 
-	hash_clear ();
+	if (hashclear)
+		hash_clear ();
+
 	return oldret;
 }
 

@@ -30,6 +30,8 @@
 #include "move.h"
 #include "hash.h"
 
+#define HASHDEBUG 0
+
 uint64 xorstate;
 uint64 poskey = 0;
 
@@ -41,6 +43,10 @@ uint64 promokeys [32][4];
 
 uint64 entries;
 hashentry *hashtable = NULL;
+
+#if HASHDEBUG
+uint64 *collisiontable = NULL;
+#endif
 
 uint64 xor (void)
 {
@@ -83,6 +89,13 @@ void hash_init (uint64 bytes)
 
 	hashtable = malloc (entries * sizeof (hashentry));
 	hash_clear ();
+
+	#if HASHDEBUG
+	free (collisiontable);
+	collisiontable = malloc (entries * sizeof (uint64));
+	for (int i = 0; i < entries; i++)
+		collisiontable [i] = 0;
+	#endif
 
 	printf ("hash table initialized with %u entries\n", entries);
 }
@@ -149,6 +162,7 @@ int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 				return beta;
 		}
 
+		// if we can't use this entry's score directly, prioritize this move in the search
 		if (e->best.square != 0)
 			*best = &e->best;
 	}
@@ -160,6 +174,11 @@ void hash_store (uint8 depth, int16 score, uint8 type, move *best)
 {
 	hashentry *e = &hashtable [poskey % entries];
 
+	#if HASHDEBUG
+	if (e->type != et_null)
+		collisiontable [poskey % entries]++;
+	#endif
+
 	e->key = poskey;
 	e->depth = depth;
 	e->score = score;
@@ -169,4 +188,36 @@ void hash_store (uint8 depth, int16 score, uint8 type, move *best)
 		e->best = *best;
 	else
 		e->best.square = 0;
+}
+
+void hash_info (void)
+{
+	uint64 occupied = 0;
+	for (int i = 0; i < entries; i++)
+		occupied += (hashtable [i].type != et_null);
+
+	#if HASHDEBUG
+	uint64 totalcoll = 0;
+	struct { int idx; uint64 count; } top [16] = { 0 };
+	for (int i = 0; i < entries; i++)
+	{
+		totalcoll += collisiontable [i];
+
+		for (int j = 0; j < 16; j++)
+		{
+			if (collisiontable [i] > top [j].count)
+			{
+				top [j].idx = i;
+				top [j].count = collisiontable [i];
+				break;
+			}
+		}
+	}
+
+	printf ("%u collisions total:\n", totalcoll);
+	for (int i = 0; i < 16; i++)
+		printf ("index %i: %u\n", top [i].idx, top [i].count);
+	#endif
+
+	printf ("%u/%u entries occupied (%g%%)\n", occupied, entries, (occupied / (double)entries) * 100.);
 }

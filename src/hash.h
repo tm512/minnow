@@ -47,5 +47,6 @@ void hash_clear (void);
 uint64 hash_poskey (void);
 int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best);
 void hash_store (uint8 depth, int16 score, uint8 type, move *best);
+void hash_info (void);
 
 #endif
