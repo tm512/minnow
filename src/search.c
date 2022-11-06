@@ -271,8 +271,9 @@ int16 search (uint8 depth, uint64 maxtime, move *best, int hashclear)
 		reptable [histkeys [i] % 65536] ++;
 
 	// Search "indefinitely"
-	if (depth == 0)
-		depth = 255;
+	// TODO: stack overflows occur around ply 65 with default Linux stack size, so cap this to a (hopefully) safe maximum
+	if (depth == 0 || depth > 60)
+		depth = 60;
 
 	if (maxtime > 0) // determine how much time to spend on this move
 		endtime = time_get () + maxtime;
@@ -373,7 +374,7 @@ uint64 perft (uint8 depth, uint8 start)
 
 	if (depth == start)
 	{
-		printf ("%u castles, %u promotions\n", castles, promos);
+		printf ("%llu castles, %llu promotions\n", castles, promos);
 		castles = promos = 0;
 	}
 
