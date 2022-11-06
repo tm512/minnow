@@ -155,16 +155,13 @@ uint8 uci_parse (uint8 searching)
 				maxtime = time_alloc (wtime, btime);
 		}
 
-		search (depth, maxtime, &best, 0);
+		search (depth, maxtime, &best, 1);
 		move_print (&best, c);
 		printf ("bestmove %s\n", c);
 	}
 
 	if (!strncmp (line, "disp", 4))
-	{
 		board_print ();
-		printf ("key: %16llX\n", hash_poskey ());
-	}
 
 	if (!strncmp (line, "quit", 4))
 		exit (0);

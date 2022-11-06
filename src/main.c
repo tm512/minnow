@@ -90,7 +90,7 @@ int main (void)
 			}
 
 			uint64 start = time_get ();
-			int16 score = search (atoi (&line [7]), 0, NULL, 0);
+			int16 score = search (atoi (&line [7]), 0, NULL, 1);
 			printf ("score: %i (search took %f seconds)\n", score, time_since_sec (start));
 		}
 

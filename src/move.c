@@ -119,7 +119,7 @@ void move_apply (move *m)
 	}
 
 	// unset old en passant
-	if (history [htop - 1].special == ms_enpas)
+	if (curboard->enpas)
 		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
 
 	if (m->special == ms_enpas)
@@ -268,16 +268,19 @@ void move_undo (move *m)
 		}
 	}
 
-	if (&curboard->pieces [m->piece] == curboard->rooks [!curboard->side] [0] && (curboard->pieces [m->piece].flags & pf_moved) == 0)
+	if ((curboard->kings [!curboard->side]->flags & pf_moved) == 0)
 	{
-		curboard->cast [!curboard->side] [0] = 1;
-		poskey ^= castkeys [!curboard->side * 2];
-	}
+		if (&curboard->pieces [m->piece] == curboard->rooks [!curboard->side] [0] && (curboard->pieces [m->piece].flags & pf_moved) == 0)
+		{
+			curboard->cast [!curboard->side] [0] = 1;
+			poskey ^= castkeys [!curboard->side * 2];
+		}
 
-	if (&curboard->pieces [m->piece] == curboard->rooks [!curboard->side] [1] && (curboard->pieces [m->piece].flags & pf_moved) == 0)
-	{
-		curboard->cast [!curboard->side] [1] = 1;
-		poskey ^= castkeys [!curboard->side * 2 + 1];
+		if (&curboard->pieces [m->piece] == curboard->rooks [!curboard->side] [1] && (curboard->pieces [m->piece].flags & pf_moved) == 0)
+		{
+			curboard->cast [!curboard->side] [1] = 1;
+			poskey ^= castkeys [!curboard->side * 2 + 1];
+		}
 	}
 
 	// unset old en passant
@@ -334,6 +337,10 @@ void move_undo (move *m)
 		if (htop > 0 && m->taken == history [htop].piece && history [htop].taken != 32)
 			curboard->trades --;
 	}
+
+	// unset ms_firstmove, since this move may be used in the future for an already moved piece
+	if (m->special == ms_firstmove)
+		m->special = ms_null;
 
 	// switch sides
 	poskey ^= sidekey;
