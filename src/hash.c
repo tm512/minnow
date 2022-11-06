@@ -31,6 +31,7 @@
 #include "hash.h"
 
 #define HASHDEBUG 0
+#define NOHASHING 0
 
 uint64 xorstate;
 uint64 poskey = 0;
@@ -80,6 +81,7 @@ void hash_init (uint64 bytes)
 	for (int j = 0; j < 4; j++)
 		promokeys [i] [j] = xor ();
 
+	#if !NOHASHING
 	entries = bytes / sizeof (hashentry);
 
 	free (hashtable);
@@ -98,6 +100,9 @@ void hash_init (uint64 bytes)
 	#endif
 
 	printf ("hash table initialized with %u entries\n", entries);
+	#else
+	printf ("hash table disabled at compile-time\n");
+	#endif
 }
 
 void hash_clear (void)
@@ -110,6 +115,7 @@ void hash_clear (void)
 	}
 }
 
+#define currentside (curboard->side ? "black" : "white")
 uint8 poshack = 0;
 uint64 hash_poskey (void)
 {
@@ -122,33 +128,76 @@ uint64 hash_poskey (void)
 		if (curboard->pieces [i].flags & pf_taken || curboard->pieces [i].type == pt_none)
 			continue;
 
+		#if HASHDEBUG
+		printf ("poskey: %c%i: %s %s (%16llX)\n",
+		        'a' + board_getfile (curboard->pieces [i].square),
+		        1 + board_getrank (curboard->pieces [i].square),
+		        currentside, board_piecetype (&curboard->pieces [i]),
+		        keytable [(i * 120) + curboard->pieces [i].square]);
+		#endif
+
 		ret ^= keytable [(i * 120) + curboard->pieces [i].square];
 	}
 
+	#if HASHDEBUG
+	printf ("poskey: %s to move (%16llX)\n", currentside, curboard->side ? sidekey : 0);
+	#endif
 	if (curboard->side)
 		ret ^= sidekey;
 
 	if (curboard->cast [0] [0])
+	{
+		#if HASHDEBUG
+		printf ("poskey: white queenside castling (%16llX)\n", castkeys [0]);
+		#endif
 		ret ^= castkeys [0];
+	}
 
 	if (curboard->cast [0] [1])
+	{
+		#if HASHDEBUG
+		printf ("poskey: white kingside castling (%16llX)\n", castkeys [1]);
+		#endif
 		ret ^= castkeys [1];
+	}
 
 	if (curboard->cast [1] [0])
+	{
+		#if HASHDEBUG
+		printf ("poskey: black queenside castling (%16llX)\n", castkeys [2]);
+		#endif
 		ret ^= castkeys [2];
+	}
 
 	if (curboard->cast [1] [1])
+	{
+		#if HASHDEBUG
+		printf ("poskey: black kingside castling (%16llX)\n", castkeys [3]);
+		#endif
 		ret ^= castkeys [3];
+	}
 
 	if (curboard->enpas)
+	{
+		#if HASHDEBUG
+		printf ("poskey: %c file en passant (%16llX)\n", 'a' + board_getfile (curboard->enpas->square),
+		        epkeys [board_getfile (curboard->enpas->square)]);
+		#endif
 		ret ^= epkeys [board_getfile (curboard->enpas->square)];
+	}
 
 	return ret;
 }
 
+static inline uint64_t fastidx (uint64_t key)
+{
+	return ((key & 0xffffffff) * entries) >> 32;
+}
+
 int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 {
-	hashentry *e = &hashtable [poskey % entries];
+	#if !NOHASHING
+	hashentry *e = &hashtable [fastidx (poskey)];
 
 	if (e->key == poskey) // this entry (probably) came from the same position
 	{
@@ -166,13 +215,15 @@ int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 		if (e->best.square != 0)
 			*best = &e->best;
 	}
+	#endif
 
 	return -32000;
 }
 
 void hash_store (uint8 depth, int16 score, uint8 type, move *best)
 {
-	hashentry *e = &hashtable [poskey % entries];
+	#if !NOHASHING
+	hashentry *e = &hashtable [fastidx (poskey)];
 
 	#if HASHDEBUG
 	if (e->type != et_null)
@@ -188,10 +239,16 @@ void hash_store (uint8 depth, int16 score, uint8 type, move *best)
 		e->best = *best;
 	else
 		e->best.square = 0;
+	#endif
 }
 
 void hash_info (void)
 {
+	#if NOHASHING
+	printf ("hash table disabled\n");
+	return;
+	#endif
+
 	uint64 occupied = 0;
 	for (int i = 0; i < entries; i++)
 		occupied += (hashtable [i].type != et_null);

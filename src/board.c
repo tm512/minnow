@@ -50,6 +50,45 @@ inline uint8 board_getrank (uint8 square)
 	return square / 10 - 2;
 }
 
+char *board_piecetype (piece *p)
+{
+	switch (p->type)
+	{
+		case pt_pawn: return "pawn";
+		case pt_knight: return "knight";
+		case pt_bishop: return "bishop";
+		case pt_rook: return "rook";
+		case pt_queen: return "queen";
+		case pt_king: return "king";
+		default: return "invalid";
+	}
+}
+
+char *board_castlerights (void)
+{
+	static char ret[5];
+	char wk = curboard->cast [bs_white][1] ? 'K' : '-',
+	     wq = curboard->cast [bs_white][0] ? 'Q' : '-',
+	     bk = curboard->cast [bs_black][1] ? 'k' : '-',
+	     bq = curboard->cast [bs_black][0] ? 'q' : '-';
+
+	sprintf (ret, "%c%c%c%c", wk, wq, bk, bq);
+	return ret;
+}
+
+char *board_enpassquare (void)
+{
+	static char ret[3];
+	int square;
+
+	if (!curboard->enpas)
+		return "--";
+
+	square = curboard->enpas->square;
+	sprintf (ret, "%c%i", 'a' + board_getfile (square), 1 + board_getrank (square));
+	return ret;
+}
+
 piece dummy = { .flags = pf_moved };
 
 void board_initialize (const char *fen)
@@ -337,4 +376,6 @@ void board_print (void)
 	}
 
 	putchar ('\n');
+	printf ("key: %016llX\n", hash_poskey ());
+	printf ("side: %s | castling: %s | en passant: %s\n", curboard->side ? "black" : "white", board_castlerights (), board_enpassquare ());
 }

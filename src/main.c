@@ -66,7 +66,6 @@ int main (void)
 				board_initialize (line + 4);
 
 			board_print ();
-			printf ("key: %16llX\n", hash_poskey ());
 		}
 
 		if (!strncmp (line, "perft", 5))
@@ -77,9 +76,9 @@ int main (void)
 				board_initialize (startpos);
 			}
 				
-			clock_t start = clock ();
+			uint64 start = time_get ();
 			uint64 count = perft (atoi (&line [6]), atoi (&line [6]));
-			printf ("perft: %i (took %f seconds)\n", count, (float)(clock () - start) / CLOCKS_PER_SEC);
+			printf ("perft: %llu (took %f seconds)\n", count, time_since_sec (start));
 		}
 
 		if (!strncmp (line, "search", 6))
@@ -100,7 +99,7 @@ int main (void)
 			// run 10 loops, print average speed
 			uint64 start = time_get ();
 			for (int i = 0; i < 10; i++)
-				search (7, 0, NULL, 1);
+				search (atoi (&line [10]), 0, NULL, 1);
 			printf ("avg %f seconds per search\n", time_since_sec (start) / 10.0);
 		}
 
@@ -118,7 +117,6 @@ int main (void)
 			}
 
 			board_print ();
-			printf ("key: %16llX\n", hash_poskey ());
 		}
 
 		line [0] = 0;

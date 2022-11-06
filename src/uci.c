@@ -116,12 +116,24 @@ uint8 uci_parse (uint8 searching)
 		move best;
 		char c [6];
 		uint64 depth = 0, wtime = 0, btime = 0, maxtime = 0;
-		char *cdepth, *cwtime, *cbtime;
+		char *cdepth, *cwtime, *cbtime, *cperft;
 
 		// determine some search options
 		cdepth = strstr (line, "depth");
 		cwtime = strstr (line, "wtime");
 		cbtime = strstr (line, "btime");
+		cperft = strstr (line, "perft");
+
+		if (cperft)
+		{
+			uint64 start = time_get ();
+			uint64 count;
+
+			depth = atoi (cperft + 6);
+			count = perft (depth, depth);
+			printf ("perft: %llu (took %f seconds)\n", count, time_since_sec (start));
+			return 1;
+		}
 
 		if (cdepth)
 			depth = atoi (cdepth + 6);
