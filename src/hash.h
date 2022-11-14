@@ -36,7 +36,7 @@ typedef struct
 } hashentry;
 
 extern uint64 poskey;
-extern uint64 keytable [3840];
+extern uint64 keytable [1680];
 extern uint64 sidekey;
 extern uint64 castkeys [4];
 extern uint64 epkeys [8];
@@ -48,5 +48,7 @@ uint64 hash_poskey (void);
 int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best);
 void hash_store (uint8 depth, int16 score, uint8 type, move *best);
 void hash_info (void);
+
+#define hash_pieceidx(i) (((curboard->pieces [i].type << 1) + curboard->pieces [i].side) * 120)
 
 #endif

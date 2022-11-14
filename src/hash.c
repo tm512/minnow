@@ -33,10 +33,10 @@
 #define HASHDEBUG 0
 #define NOHASHING 0
 
-uint64 xorstate;
+uint64 prngstate;
 uint64 poskey = 0;
 
-uint64 keytable [3840];
+uint64 keytable [1680];
 uint64 sidekey;
 uint64 castkeys [4];
 uint64 epkeys [8];
@@ -47,39 +47,54 @@ hashentry *hashtable = NULL;
 
 #if HASHDEBUG
 uint64 *collisiontable = NULL;
+uint64 totalstores = 0;
 #endif
 
-uint64 xor (void)
+uint64 xorshift (uint64 x)
 {
-	xorstate ^= xorstate << 13;
-	xorstate ^= xorstate >> 7;
-	xorstate ^= xorstate << 17;
-	return xorstate;
+	x ^= x << 13;
+	x ^= x >> 7;
+	x ^= x << 17;
+	return x * 0x2545f4914f6cdd1d;
+}
+
+// splitmix64 implementation from duktape
+uint64_t splitmix64 (uint64_t x)
+{
+	x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+	x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+	return x ^ (x >> 31);
+}
+
+uint64 prng (void)
+{
+	prngstate += 0x9e3779b97f4a7c15;
+	return splitmix64 (prngstate);
 }
 
 void hash_init (uint64 bytes)
 {
-	xorstate = 0xac2c986921b37e05;
+	prngstate = 0xac2c986921b37e05;
 
-	for (int i = 0; i < 3840; i++)
-		keytable [i] = xor ();
+	for (int i = 0; i < 1680; i++)
+		keytable [i] = prng ();
 
-	for (int i = 0; i < 3840; i++)
-	for (int j = 0; j < 3840; j++)
+	for (int i = 0; i < 1680; i++)
+	for (int j = 0; j < 1680; j++)
 		if (i != j && keytable [i] == keytable [j])
 			printf ("keytable collision\n");
 
-	sidekey = xor ();
+	sidekey = prng ();
 
 	for (int i = 0; i < 4; i++)
-		castkeys [i] = xor ();
+		castkeys [i] = prng ();
 
 	for (int i = 0; i < 8; i++)
-		epkeys [i] = xor ();
+		epkeys [i] = prng ();
 
 	for (int i = 0; i < 32; i++)
 	for (int j = 0; j < 4; j++)
-		promokeys [i] [j] = xor ();
+		promokeys [i] [j] = prng ();
 
 	#if !NOHASHING
 	entries = bytes / sizeof (hashentry);
@@ -97,6 +112,8 @@ void hash_init (uint64 bytes)
 	collisiontable = malloc (entries * sizeof (uint64));
 	for (int i = 0; i < entries; i++)
 		collisiontable [i] = 0;
+
+	totalstores = 0;
 	#endif
 
 	printf ("hash table initialized with %u entries\n", entries);
@@ -133,10 +150,10 @@ uint64 hash_poskey (void)
 		        'a' + board_getfile (curboard->pieces [i].square),
 		        1 + board_getrank (curboard->pieces [i].square),
 		        currentside, board_piecetype (&curboard->pieces [i]),
-		        keytable [(i * 120) + curboard->pieces [i].square]);
+		        keytable [hash_pieceidx (i) + curboard->pieces [i].square]);
 		#endif
 
-		ret ^= keytable [(i * 120) + curboard->pieces [i].square];
+		ret ^= keytable [hash_pieceidx (i) + curboard->pieces [i].square];
 	}
 
 	#if HASHDEBUG
@@ -211,7 +228,7 @@ int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 				return beta;
 		}
 
-		// if we can't use this entry's score directly, prioritize this move in the search
+		// prioritize this move in the search
 		if (e->best.square != 0)
 			*best = &e->best;
 	}
@@ -226,7 +243,8 @@ void hash_store (uint8 depth, int16 score, uint8 type, move *best)
 	hashentry *e = &hashtable [fastidx (poskey)];
 
 	#if HASHDEBUG
-	if (e->type != et_null)
+	totalstores ++;
+	if (e->type != et_null && e->key != poskey)
 		collisiontable [poskey % entries]++;
 	#endif
 
@@ -271,10 +289,14 @@ void hash_info (void)
 		}
 	}
 
-	printf ("%u collisions total:\n", totalcoll);
+	printf ("%llu collisions total:\n", totalcoll);
 	for (int i = 0; i < 16; i++)
-		printf ("index %i: %u\n", top [i].idx, top [i].count);
+		printf ("index %i: %llu\n", top [i].idx, top [i].count);
 	#endif
 
-	printf ("%u/%u entries occupied (%g%%)\n", occupied, entries, (occupied / (double)entries) * 100.);
+	printf ("%llu/%llu entries occupied (%g%%)\n", occupied, entries, (occupied / (double)entries) * 100.);
+
+	#if HASHDEBUG
+	printf ("%llu total entries stored\n", totalstores);
+	#endif
 }

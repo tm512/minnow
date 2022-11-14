@@ -20,7 +20,7 @@ debug: OPT = 0
 debug: DBG = 3
 debug: $(OUT)
 
-profile: OPT = 1
+profile: OPT = 2
 profile: DBG = 3
 profile: CFLAGS_ += -pg
 profile: LDFLAGS_ += -pg

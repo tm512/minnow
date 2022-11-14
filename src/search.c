@@ -52,6 +52,23 @@ uint64 leafnodes = 0;
 uint64 endtime = 0;
 uint64 iterations = 0;
 
+static int sanitycheck (move *m, piece **mover, piece **target)
+{
+	*mover = curboard->squares[m->from].piece;
+	if (!(*mover) || curboard->pieces [m->piece].type != (*mover)->type)
+		return 0;
+
+	if (m->special == ms_enpascap && curboard->enpas)
+		*target = curboard->enpas;
+	else
+		*target = curboard->squares [m->square].piece;
+
+	if (m->taken < 32 && (!(*target) || curboard->pieces [m->taken].type != (*target)->type))
+		return 0;
+
+	return 1;
+}
+
 int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, uint8 donull)
 {
 	movelist *m, *it, hbm;
@@ -116,9 +133,36 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 
 	if (hashbest)
 	{
-		hbm.m = *hashbest;
-		hbm.next = it;
-		it = &hbm;
+		piece *mover, *target;
+
+		if (sanitycheck (hashbest, &mover, &target))
+		{
+			hbm.m = *hashbest;
+
+			// update mover and target (where applicable)
+			hbm.m.piece = mover - curboard->pieces;
+			hbm.m.taken = target ? target - curboard->pieces : 32;
+
+			hbm.next = it;
+			it = &hbm;
+		}
+		else
+		{
+			char c [6];
+			move_print (hashbest, c);
+			printf ("Illegal hash move: %s, (pseudo-)legal movelist: ", c, hash_poskey ());
+			while (it)
+			{
+				move_print (&it->m, c);
+				printf ("%s ", c);
+				it = it->next;
+			}
+
+			it = m;
+			printf ("\nhistory:\n");
+			move_printhist ();
+		//	board_print ();
+		}
 	}
 
 	while (it)
@@ -280,7 +324,7 @@ int16 search (uint8 depth, uint64 maxtime, move *best, int hashclear)
 	else
 		endtime = ~0; // never end
 
-	for (int i = 2; i <= depth && abs (ret) < 15000; i++)
+	for (int i = 1; i <= depth && abs (ret) < 15000; i++)
 	{
 		start = time_get ();
 		pvlist pv = { 0 };
