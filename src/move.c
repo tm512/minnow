@@ -201,15 +201,6 @@ void move_undo (move *m)
 {
 	htop --;
 
-	if (history [htop].from == 0)
-	{
-		printf ("move_undo called on move with from == 0\n");
-		move_printhist ();
-		exit (0);
-	}
-
-	// this is like move_apply, with to and from swapped:
-
 	// unset piece on the square we're moving from
 	curboard->squares [m->square].piece = NULL;
 	curboard->posscore [!curboard->side] -= posvals [!curboard->side] [curboard->pieces [m->piece].type] [m->square];
@@ -392,7 +383,7 @@ void move_inithist (void)
 		history [htop].piece = curboard->enpas - curboard->pieces;
 		history [htop].taken = 32;
 		history [htop].square = curboard->enpas->square;
-		history [htop].from = 0; // check to make sure this isn't used
+		history [htop].from = 0;
 		history [htop].special = ms_enpas;
 	}
 
