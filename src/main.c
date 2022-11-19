@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2015 Kyle Davis, All Rights Reserved.
+/* Copyright (c) 2014-2022 Kyle Davis, All Rights Reserved.
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation
@@ -41,7 +41,7 @@ char line [8192]; // I think this will be enough to buffer a line
 int main (void)
 {
 	printf ("minnow " GIT_VERSION "\n");
-	printf ("[c] 2014-2015 Kyle Davis (tm512)\n\n");
+	printf ("[c] 2014-2022 Kyle Davis (tm512)\n\n");
 
 	hash_init (32 * 1024 * 1024);
 	move_initnodes ();
