@@ -313,6 +313,9 @@ int16 search (uint8 depth, uint64 maxtime, move *best, int hashclear)
 		pvlist pv = { 0 };
 		ret = absearch (i, i, &pv, -30000, 30000, 1);
 
+		// absearch's result is relative to the current side, whereas most UCI stuff expects white-relative scores
+		ret = curboard->side == bs_white ? ret : -ret;
+
 		ittime = time_since (start);
 
 		if (pv.nodes > 0)
