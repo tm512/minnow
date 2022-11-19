@@ -295,7 +295,7 @@ void board_initialize (const char *fen)
 	}
 
 	poskey = hash_poskey ();
-	histkeys [hbot] = poskey;
+	move_inithist ();
 }
 
 uint8 attackhack = 0;

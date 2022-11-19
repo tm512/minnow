@@ -59,7 +59,7 @@ int main (void)
 
 		if (!strncmp (line, "pos", 3))
 		{
-			hbot = htop = 0;
+			htop = 0;
 			if (!strncmp (line + 4, "start", 5))
 				board_initialize (startpos);
 			else

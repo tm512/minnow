@@ -47,7 +47,6 @@
 */
 #define NULLMOVE 0
 
-uint8 reptable [65536] = { 0 };
 uint64 leafnodes = 0;
 uint64 endtime = 0;
 uint64 iterations = 0;
@@ -184,11 +183,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 
 		legalmoves ++;
 
-		// check for repetition
-		idx = poskey % 65536;
-		reptable [idx] ++;
-
-		if (reptable [idx] > 1 && move_repcheck ())
+		if (move_repcheck ())
 			score = contempt;
 		else
 			score = -absearch (depth - 1, start, &stackpv, -beta, -alpha, 1);
@@ -216,7 +211,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 			hash_store (depth, beta, et_beta, bestmove);
 			move_clearnodes (m);
 
-			reptable [idx] --;
 			return beta;
 		}
 
@@ -230,7 +224,6 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 			pv->nodes = stackpv.nodes + 1;
 		}
 
-		reptable [idx] --;
 		move_undo (&it->m);
 		it = it->next;
 	}
@@ -310,10 +303,6 @@ int16 search (uint8 depth, uint64 maxtime, move *best, int hashclear)
 	int16 ret = 0, oldret;
 	uint64 start, ittime;
 
-	// set up repetition table
-	for (int i = 0; i <= hbot + htop; i++)
-		reptable [histkeys [i] % 65536] ++;
-
 	// Search "indefinitely"
 	// TODO: stack overflows occur around ply 65 with default Linux stack size, so cap this to a (hopefully) safe maximum
 	if (depth == 0 || depth > 60)
@@ -366,9 +355,6 @@ int16 search (uint8 depth, uint64 maxtime, move *best, int hashclear)
 		if (time_get () >= endtime - ittime * 2)
 			break;
 	}
-
-	for (int i = 0; i < 65536; i ++)
-		reptable [i] = 0;
 
 	if (hashclear)
 		hash_clear ();

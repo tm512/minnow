@@ -65,7 +65,7 @@ uint8 uci_parse (uint8 searching)
 		printf ("readyok\n");
 
 	if (!strncmp (line, "ucinewgame", 10))
-		hbot = htop = 0;
+		htop = 0;
 
 	if (!strncmp (line, "position", 8))
 	{
@@ -74,13 +74,12 @@ uint8 uci_parse (uint8 searching)
 		if (!strncmp (posline, "startpos", 8))
 		{
 			// assume new game
-			hbot = htop = 0;
+			htop = 0;
 			board_initialize (startpos);
 		}
 		else if (!strncmp (posline, "fen", 3))
 		{
 			// assume we're making a move here
-			hbot ++;
 			htop = 0;
 			board_initialize (posline + 4);
 		}
@@ -96,7 +95,7 @@ uint8 uci_parse (uint8 searching)
 			{
 				move m = { 0 };
 				move_decode (posline, &m);
-				move_make (&m);
+				move_apply (&m);
 
 				posline = strstr (posline, " ");
 

@@ -36,16 +36,14 @@
 
 const uint32 maxnodes = 8192;
 
-move history [128];
-uint64 histkeys [512];
-uint8 htop = 0;
-uint16 hbot = 0;
+move history [1024];
+uint64 histkeys [1024];
+uint16 htop = 0;
 uint64 numnodes = 0;
 
 // applies a move to curboard
 void move_apply (move *m)
 {
-	htop ++;
 	history [htop] = *m;
 
 	// unset piece on the square we're moving from
@@ -186,29 +184,29 @@ void move_apply (move *m)
 		}
 
 		// every time we immediately recapture a piece, it counts as a trade.
-		if (htop > 1 && m->taken == history [htop - 1].piece && history [htop - 1].taken != 32)
+		if (htop > 0 && m->taken == history [htop - 1].piece && history [htop - 1].taken != 32)
 			curboard->trades ++;
 	}
 
 	// switch sides
 	poskey ^= sidekey;
 	curboard->side = !curboard->side;
-	histkeys [hbot + htop] = poskey;
-}
 
-// make a move, setting it as the current root for searching
-void move_make (move *m)
-{
-	move_apply (m);
-	hbot ++;
-	htop = 0;
-	histkeys [hbot] = poskey;
+	histkeys [htop] = poskey;
+	htop ++;
 }
 
 // undo a move
 void move_undo (move *m)
 {
 	htop --;
+
+	if (history [htop].from == 0)
+	{
+		printf ("move_undo called on move with from == 0\n");
+		move_printhist ();
+		exit (0);
+	}
 
 	// this is like move_apply, with to and from swapped:
 
@@ -284,12 +282,12 @@ void move_undo (move *m)
 	}
 
 	// unset old en passant
-	if (history [htop + 1].special == ms_enpas)
+	if (curboard->enpas)
 		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
 
-	if (history [htop].special == ms_enpas)
+	if (htop > 0 && history [htop - 1].special == ms_enpas)
 	{
-		curboard->enpas = &curboard->pieces [history [htop].piece];
+		curboard->enpas = &curboard->pieces [history [htop - 1].piece];
 		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
 	}
 	else
@@ -334,7 +332,7 @@ void move_undo (move *m)
 			}
 		}
 
-		if (htop > 0 && m->taken == history [htop].piece && history [htop].taken != 32)
+		if (htop > 0 && m->taken == history [htop - 1].piece && history [htop - 1].taken != 32)
 			curboard->trades --;
 	}
 
@@ -349,7 +347,6 @@ void move_undo (move *m)
 
 void move_applynull (void)
 {
-	htop ++;
 	history [htop].piece = 0;
 	history [htop].taken = 32;
 	history [htop].square = 0;
@@ -357,22 +354,23 @@ void move_applynull (void)
 	history [htop].special = 0;
 
 	// unset old en passant
-	if (history [htop - 1].special == ms_enpas)
+	if (curboard->enpas)
 		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
 
 	curboard->enpas = NULL;
 
 	poskey ^= sidekey;
-	histkeys [hbot + htop] = poskey;
+	histkeys [htop] = poskey;
+	htop ++;
 }
 
 void move_undonull (void)
 {
 	htop --;
 
-	if (history [htop].special == ms_enpas)
+	if (htop > 0 && history [htop - 1].special == ms_enpas)
 	{
-		curboard->enpas = &curboard->pieces [history [htop].piece];
+		curboard->enpas = &curboard->pieces [history [htop - 1].piece];
 		poskey ^= epkeys [board_getfile (curboard->enpas->square)];
 	}
 	else
@@ -381,11 +379,31 @@ void move_undonull (void)
 	poskey ^= sidekey;
 }
 
+// called from board_initialize after the position is set
+void move_inithist (void)
+{
+	// add the initial position's key for repetition checks
+	histkeys [htop] = poskey;
+
+	// if the initial position has EP set, add a dummy EP move to the history so move_undo resets it properly
+	// a bit of a hack, but easier than the alternative of using a copy-make strategy for tracking EP
+	if (curboard->enpas)
+	{
+		history [htop].piece = curboard->enpas - curboard->pieces;
+		history [htop].taken = 32;
+		history [htop].square = curboard->enpas->square;
+		history [htop].from = 0; // check to make sure this isn't used
+		history [htop].special = ms_enpas;
+	}
+
+	htop ++;
+}
+
 void move_printhist (void)
 {
 	char c [6];
 	char *special, *moveside, *takeside;
-	for (int i = htop; i > hbot; i--)
+	for (int i = htop; i >= 0; i--)
 	{
 		move_print (&history [i], c);
 		moveside = history [i].piece < 16 ? "white" : "black";
@@ -909,9 +927,20 @@ void move_decode (const char *c, move *m)
 // check for threefold repetition in the history
 uint8 move_repcheck (void)
 {
-	for (int i = 0; i < hbot + htop; i++)
+	int reps = 0;
+
+	// start from the current position and go backwards
+	// searching every other ply saves time since side to move factors into the key, we can discard all moves from the opposing side
+	for (int i = htop - 1; i >= 0; i -= 2)
 	{
 		if (histkeys [i] == poskey)
+			reps ++;
+
+		// pawn moves and captures make further repetitions impossible, so we can safely abort
+		if (curboard->pieces [history [i].piece].type == pt_pawn || history [i].taken != 32)
+			return 0;
+
+		if (reps >= 3)
 			return 1;
 	}
 

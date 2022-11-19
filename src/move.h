@@ -57,16 +57,16 @@ typedef struct movelist_s
 } movelist;
 
 extern movelist *moveroot;
-extern move history [128];
-extern uint64 histkeys [512];
-extern uint8 htop;
+extern move history [1024];
+extern uint64 histkeys [1024];
+extern uint16 htop;
 extern uint16 hbot;
 
 void move_apply (move *m);
-void move_make (move *m);
 void move_undo (move *m);
 void move_applynull (void);
 void move_undonull (void);
+void move_inithist (void);
 void move_printhist (void);
 void move_initnodes (void);
 movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from);
