@@ -36,16 +36,10 @@
 #include "values.h"
 #include "search.h"
 
-/* enable null move heuristic
-   this is known to be faulty, leading the engine to select illegal moves
-   you probably shouldn't enable it unless you're looking to fix the issue
-
-   to reproduce:
-   uci
-   position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 a7a6 b5c6 d7c6 c2c3 d8d3 d1e2 d3e2 e1e2 f8d6 h1e1 c6c5 d2d3
-   go depth 7
-*/
-#define NULLMOVE 0
+// toggle null move heuristic
+// thought to be the source of illegal moves, it seems like those were actually caused by the search using hash moves
+// still, if search is having issues, try disabling this
+#define NULLMOVE 1
 
 uint64 leafnodes = 0;
 uint64 endtime = 0;
