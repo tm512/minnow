@@ -320,11 +320,10 @@ int16 search (uint8 depth, uint64 maxtime, move *best, int hashclear)
 
 		if (pv.nodes > 0)
 		{
-			if (ittime == 0)
-				ittime = 1;
+			int infotime = ittime > 0 ? ittime : 1;
 
 			// print UCI info
-			printf ("info depth %u score cp %i time %u nodes %u nps %u pv ", i, ret, ittime, leafnodes, (leafnodes * 1000) / ittime);
+			printf ("info depth %u score cp %i time %u nodes %u nps %u pv ", i, ret, infotime, leafnodes, (leafnodes * 1000) / infotime);
 
 			for (int j = 0; j < pv.nodes; j++)
 			{

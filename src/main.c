@@ -43,7 +43,7 @@ int main (void)
 	printf ("minnow " GIT_VERSION "\n");
 	printf ("[c] 2014-2022 Kyle Davis (tm512)\n\n");
 
-	hash_init (32 * 1024 * 1024);
+	hash_init (DEFAULTHASH * 1024 * 1024);
 	move_initnodes ();
 
 	while (1)

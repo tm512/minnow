@@ -42,13 +42,41 @@
 extern const char *startpos;
 extern char line [8192];
 
+// very basic UCI setoption support, doesn't really need to generalize since we don't have many options
+void uci_setoption (char *c)
+{
+	char *cname, *cvalue;
+
+	cname = strstr (c, "name");
+	cvalue = strstr (c, "value");
+
+	if (!cname || !cvalue)
+		return;
+
+	if (!strncmp (cname + 5, "Hash", 4))
+	{
+		uint32 hashsize = atoi (cvalue + 6);
+		printf ("info string ");
+		hash_init (hashsize * 1024 * 1024);
+	}
+
+	if (!strncmp (cname + 5, "Move Overhead", 13))
+	{
+		overhead = atoi (cvalue + 6);
+		printf ("info string move overhead set to %llums\n", overhead);
+	}
+}
+
 int uci_main (void)
 {
 	setbuf (stdin, NULL);
 	setbuf (stdout, NULL);
 
 	printf ("\nid name minnow " GIT_VERSION "\n");
-	printf ("id author tm512\n");
+	printf ("id author tm512\n\n");
+
+	printf ("option name Hash type spin default %u min 1 max 65536\n", DEFAULTHASH); 
+	printf ("option name Move Overhead type spin default 0 min 0 max 5000\n");
 	printf ("uciok\n");
 	fflush (stdout);
 
@@ -152,12 +180,17 @@ uint8 uci_parse (uint8 searching)
 				maxtime = time_alloc (btime, wtime);
 			else
 				maxtime = time_alloc (wtime, btime);
+
+		//	printf ("info string allocated %llums for move\n", maxtime);
 		}
 
 		search (depth, maxtime, &best, 1);
 		move_print (&best, c);
 		printf ("bestmove %s\n", c);
 	}
+
+	if (!strncmp (line, "setoption", 9))
+		uci_setoption (line);
 
 	if (!strncmp (line, "disp", 4))
 		board_print ();

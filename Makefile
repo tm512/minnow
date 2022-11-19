@@ -4,7 +4,8 @@ STRIP = $(CROSS)strip
 CFLAGS =
 LDFLAGS =
 GIT_VERSION = $(shell ./gitver.sh)
-CFLAGS_ = -std=c99 -pedantic -DGIT_VERSION="\"$(GIT_VERSION)\"" $(CFLAGS) 
+DEFAULTHASH = 32
+CFLAGS_ = -std=c99 -pedantic -DGIT_VERSION="\"$(GIT_VERSION)\"" -DDEFAULTHASH=$(DEFAULTHASH) $(CFLAGS) 
 LDFLAGS_ = $(LDFLAGS)
 OBJDIR = obj
 OUT = minnow

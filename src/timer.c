@@ -37,6 +37,8 @@
 
 #include "int.h"
 
+uint64 overhead = 0;
+
 uint64 time_get (void)
 {
 	#ifdef _WIN32
@@ -89,5 +91,9 @@ uint64 time_alloc (uint64 time, uint64 nottime)
 	if (time - ret > nottime) // if we'd still have more time than our opponent after this move, give some extra
 		ret += (time - nottime - ret) / 2;
 
-	return ret;
+	// account for move overhead (i.e. network latency)
+	if (ret <= overhead) // avoid underflow
+		return 1; // we're kinda screwed, just hope for the best
+	else
+		return ret - overhead;
 }
