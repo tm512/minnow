@@ -176,38 +176,38 @@ void board_initialize (const char *fen)
 				case 'P':
 					curboard->pieces [idx [side]].type = pt_pawn;
 					curboard->pieces [idx [side]].movefunc = move_pawnmove;
-					curboard->victim [idx [side]] = 100;
-					curboard->attack [idx [side]] = 6;
+					curboard->victim [idx [side]] = 0x10;
+					curboard->attack [idx [side]] = 0x06;
 				break;
 				case 'N':
 					curboard->pieces [idx [side]].type = pt_knight;
 					curboard->pieces [idx [side]].movefunc = move_knightmove;
-					curboard->victim [idx [side]] = 200;
-					curboard->attack [idx [side]] = 5;
+					curboard->victim [idx [side]] = 0x20;
+					curboard->attack [idx [side]] = 0x05;
 				break;
 				case 'B':
 					curboard->pieces [idx [side]].type = pt_bishop;
 					curboard->pieces [idx [side]].movefunc = move_bishopmove;
-					curboard->victim [idx [side]] = 300;
-					curboard->attack [idx [side]] = 4;
+					curboard->victim [idx [side]] = 0x30;
+					curboard->attack [idx [side]] = 0x04;
 				break;
 				case 'R':
 					curboard->pieces [idx [side]].type = pt_rook;
 					curboard->pieces [idx [side]].movefunc = move_rookmove;
-					curboard->victim [idx [side]] = 500;
-					curboard->attack [idx [side]] = 3;
+					curboard->victim [idx [side]] = 0x50;
+					curboard->attack [idx [side]] = 0x03;
 				break;
 				case 'Q':
 					curboard->pieces [idx [side]].type = pt_queen;
 					curboard->pieces [idx [side]].movefunc = move_queenmove;
-					curboard->victim [idx [side]] = 600;
-					curboard->attack [idx [side]] = 2;
+					curboard->victim [idx [side]] = 0x60;
+					curboard->attack [idx [side]] = 0x02;
 				break;
 				case 'K':
 					curboard->pieces [idx [side]].type = pt_king;
 					curboard->pieces [idx [side]].movefunc = move_kingmove;
-					curboard->victim [idx [side]] = 700;
-					curboard->attack [idx [side]] = 1;
+					curboard->victim [idx [side]] = 0x70;
+					curboard->attack [idx [side]] = 0x01;
 				break;
 			}
 
