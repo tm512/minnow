@@ -383,8 +383,13 @@ void move_inithist (void)
 		history [htop].piece = curboard->enpas - curboard->pieces;
 		history [htop].taken = 32;
 		history [htop].square = curboard->enpas->square;
-		history [htop].from = 0;
+		history [htop].from = curboard->enpas->square - 20; // down 2 ranks
 		history [htop].special = ms_enpas;
+	}
+	else
+	{
+		history [htop].piece = 32;
+		history [htop].special = ms_null;
 	}
 
 	htop ++;
@@ -394,8 +399,14 @@ void move_printhist (void)
 {
 	char c [6];
 	char *special, *moveside, *takeside;
-	for (int i = htop; i >= 0; i--)
+	for (int i = htop - 1; i >= 0; i--)
 	{
+		if (history [i].piece == 32)
+		{
+			printf ("%i: invalid move\n", i);
+			continue;
+		}
+
 		move_print (&history [i], c);
 		moveside = history [i].piece < 16 ? "white" : "black";
 
