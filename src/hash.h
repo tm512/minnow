@@ -45,7 +45,7 @@ extern uint64 promokeys [32][4];
 void hash_init (uint64 bytes);
 void hash_clear (void);
 uint64 hash_poskey (void);
-int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best);
+int16 hash_probe (uint8 depth, int16 alpha, int16 beta, uint8 *type, move **best);
 void hash_store (uint8 depth, int16 score, uint8 type, move *best);
 void hash_info (void);
 

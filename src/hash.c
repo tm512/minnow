@@ -211,15 +211,21 @@ static inline uint64_t fastidx (uint64_t key)
 	return ((key & 0xffffffff) * entries) >> 32;
 }
 
-int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
+int16 hash_probe (uint8 depth, int16 alpha, int16 beta, uint8 *type, move **best)
 {
 	#if !NOHASHING
 	hashentry *e = &hashtable [fastidx (poskey)];
 
 	if (e->key == poskey) // this entry (probably) came from the same position
 	{
+		// prioritize this move in the search
+		if (e->best.square != 0)
+			*best = &e->best;
+
 		if (e->depth >= depth) // shallower results aren't to be trusted
 		{
+			*type = e->type; // search needs to know if this is a PV-node (et_exact)
+
 			if (e->type == et_exact)
 				return e->score;
 			else if (e->type == et_alpha && e->score <= alpha)
@@ -227,10 +233,6 @@ int16 hash_probe (uint8 depth, int16 alpha, int16 beta, move **best)
 			else if (e->type == et_beta && e->score >= beta)
 				return beta;
 		}
-
-		// prioritize this move in the search
-		if (e->best.square != 0)
-			*best = &e->best;
 	}
 	#endif
 

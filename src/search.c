@@ -64,11 +64,12 @@ static int sanitycheck (move *m, piece **mover, piece **target)
 
 int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, uint8 donull)
 {
-	movelist *m, *it, hbm;
+	movelist *m = NULL, *it = NULL, hbm;
 	pvlist stackpv = { 0 };
 	int16 score, bestscore = -30000;
 	move *hashbest = NULL, *bestmove = NULL;
-	uint8 etype = et_alpha, minors, majors;
+	uint8 storetype = et_alpha, probetype = et_null;
+	uint8 minors, majors;
 	uint16 idx, legalmoves = 0;
 
 	// occasionally check if we need to abort
@@ -118,11 +119,17 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 	curboard->side = !curboard->side;
 	#endif
 
-	score = hash_probe (depth, alpha, beta, &hashbest);
-	if (score != -32000)
-		return score;
+	score = hash_probe (depth, alpha, beta, &probetype, &hashbest);
 
-	it = m = move_order (move_genlist ());
+	if (probetype != et_exact)
+	{
+		// see if probe returned upper/lower bound
+		if (score != -32000)
+			return score;
+
+		// otherwise, we had a TT miss or the depth wasn't high enough, and we need to generate moves
+		it = m = move_order (move_genlist ());
+	}
 
 	if (hashbest)
 	{
@@ -211,7 +218,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 		if (score > alpha)
 		{
 			alpha = score;
-			etype = et_exact;
+			storetype = et_exact;
 
 			pv->moves [0] = it->m;
 			memcpy (pv->moves + 1, stackpv.moves, stackpv.nodes * sizeof (move));
@@ -240,7 +247,7 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 		}
 	}
 
-	hash_store (depth, alpha, etype, bestmove);
+	hash_store (depth, alpha, storetype, bestmove);
 	move_clearnodes (m);
 
 	return alpha;

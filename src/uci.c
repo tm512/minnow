@@ -184,7 +184,7 @@ uint8 uci_parse (uint8 searching)
 		//	printf ("info string allocated %llums for move\n", maxtime);
 		}
 
-		search (depth, maxtime, &best, 1);
+		search (depth, maxtime, &best, 0);
 		move_print (&best, c);
 		printf ("bestmove %s\n", c);
 	}
