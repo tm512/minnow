@@ -49,7 +49,11 @@ static int sanitycheck (move *m, piece **mover, piece **target)
 {
 	*mover = curboard->squares[m->from].piece;
 	if (!(*mover) || curboard->pieces [m->piece].type != (*mover)->type)
+	{
+		printf ("sanitycheck: failed mover check (square: %i, piece list: %i)\n",
+		        *mover ? (*mover)->type : -1, curboard->pieces [m->piece].type);
 		return 0;
+	}
 
 	if (m->special == ms_enpascap && curboard->enpas)
 		*target = curboard->enpas;
@@ -57,7 +61,11 @@ static int sanitycheck (move *m, piece **mover, piece **target)
 		*target = curboard->squares [m->square].piece;
 
 	if (m->taken < 32 && (!(*target) || curboard->pieces [m->taken].type != (*target)->type))
+	{
+		printf ("sanitycheck: failed target check (square: %i, piece list: %i)\n",
+		        *target ? (*target)->type : -1, curboard->pieces [m->taken].type);
 		return 0;
+	}
 
 	return 1;
 }
