@@ -116,7 +116,7 @@ void hash_init (uint64 bytes)
 	totalstores = 0;
 	#endif
 
-	printf ("hash table initialized with %u entries\n", entries);
+	printf ("hash table initialized to %lluMB (%u entries)\n", bytes / 1024 / 1024, entries);
 	#else
 	printf ("hash table disabled at compile-time\n");
 	#endif

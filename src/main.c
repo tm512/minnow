@@ -106,7 +106,7 @@ int main (void)
 		if (!strncmp (line, "hashinfo", 8))
 			hash_info ();
 		else if (!strncmp (line, "hash", 4))
-			hash_init (atoi (&line [5]) * 1024 * 1024);
+			hash_init (strtoll (&line [5], NULL, 10) * 1024 * 1024);
 
 		if (!strncmp (line, "disp", 4))
 		{

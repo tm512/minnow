@@ -55,7 +55,7 @@ void uci_setoption (char *c)
 
 	if (!strncmp (cname + 5, "Hash", 4))
 	{
-		uint32 hashsize = atoi (cvalue + 6);
+		uint32 hashsize = strtoll (cvalue + 6, NULL, 10);
 		printf ("info string ");
 		hash_init (hashsize * 1024 * 1024);
 	}
