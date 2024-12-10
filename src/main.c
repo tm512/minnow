@@ -41,7 +41,7 @@ char line [8192]; // I think this will be enough to buffer a line
 int main (void)
 {
 	printf ("minnow " GIT_VERSION "\n");
-	printf ("[c] 2014-2022 Kyle Davis (tm512)\n\n");
+	printf ("[c] 2014-2024 Kyle Davis (tm512)\n\n");
 
 	hash_init (DEFAULTHASH * 1024 * 1024);
 	move_initnodes ();

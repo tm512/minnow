@@ -524,7 +524,10 @@ movelist *move_pawnmove (uint8 piece, movelist **tail)
 			}
 
 			if ((sq + pawntake [side] [i])->piece)
+			{
 				it->m.taken = (sq + pawntake [side] [i])->piece - curboard->pieces;
+				it->m.score += curboard->victim [it->m.taken];
+			}
 
 			if (i > 1)
 				it->m.special = ms_enpascap;
@@ -581,7 +584,10 @@ movelist *move_knightmove (uint8 piece, movelist **tail)
 		// taking a piece?
 		if ((sq + knightmove [i])->piece && (sq + knightmove [i])->piece->side == notside
 		    && ((sq + knightmove [i])->piece->flags & pf_taken) == 0)
+		{
 			it->m.taken = (sq + knightmove [i])->piece - curboard->pieces;
+			it->m.score += curboard->victim [it->m.taken];
+		}
 	}
 
 	*tail = it;
@@ -616,7 +622,10 @@ movelist *move_slidermove (uint8 piece, int8 *moves, uint8 nmoves, movelist **ta
 			if ((sq + j)->piece)
 			{
 				if (((sq + j)->piece->flags & pf_taken) == 0)
+				{
 					it->m.taken = (sq + j)->piece - curboard->pieces;
+					it->m.score += curboard->victim [it->m.taken];
+				}
 
 				break;
 			}
@@ -676,7 +685,10 @@ movelist *move_kingmove (uint8 piece, movelist **tail)
 		// taking a piece?
 		if ((sq + qkmove [i])->piece && (sq + qkmove [i])->piece->side == notside
 		    && ((sq + qkmove [i])->piece->flags & pf_taken) == 0)
+		{
 			it->m.taken = (sq + qkmove [i])->piece - curboard->pieces;
+			it->m.score += curboard->victim [it->m.taken];
+		}
 	}
 
 	// castling
@@ -734,6 +746,7 @@ movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 	ret->m.square = square;
 	ret->m.from = from;
 	ret->m.special = 0;
+	ret->m.score = curboard->attack [piece];
 
 	ret->next = NULL;
 
@@ -745,9 +758,24 @@ movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
 // recursively clean a list of moves
 void move_clearnodes (movelist *m)
 {
+	movelist *next;
+
 	if (!m)
 		return;
 
+	// iterative version seems to be slower on my lichess-bot machine, but saving it here just in case
+/*
+	while (m)
+	{
+		next = m->next;
+
+		m->next = nodes;
+		nodes = m;
+		m = next;
+
+		numnodes --;
+	}
+*/
 	// don't free this one until we clean out all that it links to
 	if (m->next)
 		move_clearnodes (m->next);
@@ -838,6 +866,7 @@ movelist *move_genlist (void)
 		}
 	}
 
+/*
 	// score moves
 	it = ret;
 	while (it)
@@ -845,7 +874,7 @@ movelist *move_genlist (void)
 		it->m.score = curboard->victim [it->m.taken] + curboard->attack [it->m.piece];
 		it = it->next;
 	}
-
+*/
 	return ret;
 }
 
