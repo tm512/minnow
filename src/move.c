@@ -33,6 +33,7 @@
 #include "hash.h"
 
 #define NOSORT 0
+#define SCRAMBLENODES 0
 
 const uint32 maxnodes = 8192;
 
@@ -732,8 +733,14 @@ void move_initnodes (void)
 {
 	nodes = malloc (maxnodes * sizeof (movelist));
 	memset (nodes, 0, maxnodes * sizeof (movelist));
-	for (int i = 0; i < maxnodes; i++)
+	for (int i = 0; i < maxnodes - 1; i++)
+	{
+		#if SCRAMBLENODES
+		nodes [(i * 7037) % maxnodes].next = &nodes [i + 1];
+		#else
 		nodes [i].next = &nodes [i + 1];
+		#endif
+	}
 }
 
 movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
@@ -763,8 +770,6 @@ void move_clearnodes (movelist *m)
 	if (!m)
 		return;
 
-	// iterative version seems to be slower on my lichess-bot machine, but saving it here just in case
-/*
 	while (m)
 	{
 		next = m->next;
@@ -775,7 +780,7 @@ void move_clearnodes (movelist *m)
 
 		numnodes --;
 	}
-*/
+/*
 	// don't free this one until we clean out all that it links to
 	if (m->next)
 		move_clearnodes (m->next);
@@ -784,6 +789,7 @@ void move_clearnodes (movelist *m)
 	nodes = m;
 
 	numnodes --;
+*/
 }
 
 static inline movelist *merge (movelist *left, movelist *right)
