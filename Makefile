@@ -42,4 +42,4 @@ $(OUT): $(OBJ)
 	$(CC) -o $(OUT) $(OBJ) $(LDFLAGS_)
 
 clean:
-	@rm -rf $(OUT) $(OBJDIR)
+	rm -rf $(OUT) $(OBJDIR)

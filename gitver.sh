@@ -2,4 +2,4 @@
 
 [ ! -d .git ] && echo "nongit-$(date +"%Y%m%d")" && exit
 
-git log -n1 HEAD --date=short --pretty=%h-%ad | sed 's/\(....\)-\(..\)-\(..\)$/\1\2\3/'
+git log -n1 HEAD --date=format:%Y.%m.%d --pretty=%ad-%h
