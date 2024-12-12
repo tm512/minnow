@@ -45,6 +45,7 @@ int main (void)
 
 	hash_init (DEFAULTHASH * 1024 * 1024);
 	move_initnodes ();
+	board_initialize (startpos);
 
 	while (1)
 	{
@@ -70,12 +71,6 @@ int main (void)
 
 		if (!strncmp (line, "perft", 5))
 		{
-			if (!curboard)
-			{
-				printf ("position unset, using the default\n");
-				board_initialize (startpos);
-			}
-				
 			uint64 start = time_get ();
 			uint64 count = perft (atoi (&line [6]), atoi (&line [6]));
 			printf ("perft: %llu (took %f seconds)\n", count, time_since_sec (start));
@@ -83,12 +78,6 @@ int main (void)
 
 		if (!strncmp (line, "search", 6))
 		{
-			if (!curboard)
-			{
-				printf ("position unset, using the default\n");
-				board_initialize (startpos);
-			}
-
 			uint64 start = time_get ();
 			int16 score = search (atoi (&line [7]), 0, NULL, 0);
 			printf ("score: %i (search took %f seconds)\n", score, time_since_sec (start));
@@ -109,15 +98,7 @@ int main (void)
 			hash_init (strtoll (&line [5], NULL, 10) * 1024 * 1024);
 
 		if (!strncmp (line, "disp", 4))
-		{
-			if (!curboard)
-			{
-				printf ("position unset, using the default\n");
-				board_initialize (startpos);
-			}
-
 			board_print ();
-		}
 
 		line [0] = 0;
 	}
