@@ -228,6 +228,9 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 			alpha = score;
 			storetype = et_exact;
 
+		//	if (stackpv.nodes > 0 && (abs (score) == 15000 || abs (score) == 20000))
+		//		printf ("trying to copy %i moves into PV with score = %i, depth = %u\n", stackpv.nodes, score, depth);
+
 			pv->moves [0] = it->m;
 			memcpy (pv->moves + 1, stackpv.moves, stackpv.nodes * sizeof (move));
 			pv->nodes = stackpv.nodes + 1;
@@ -243,6 +246,10 @@ int16 absearch (uint8 depth, uint8 start, pvlist *pv, int16 alpha, int16 beta, u
 		curboard->side = !curboard->side;
 
 		move_clearnodes (m);
+
+		// discard PV from this position, since it's just a garbage move
+		pv->nodes = 0;
+
 		if (board_squareattacked (curboard->kings [!curboard->side]->square))
 		{
 			curboard->side = !curboard->side;
