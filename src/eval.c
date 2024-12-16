@@ -30,7 +30,7 @@
 
 #pragma GCC optimize ("unroll-loops")
 
-int16 contempt = -100;
+int16 contempt = 0;
 
 int16 evaluate (int16 alpha, int16 beta)
 {

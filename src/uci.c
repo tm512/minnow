@@ -34,6 +34,7 @@
 #include "int.h"
 #include "board.h"
 #include "move.h"
+#include "eval.h"
 #include "search.h"
 #include "timer.h"
 #include "hash.h"
@@ -62,8 +63,14 @@ void uci_setoption (char *c)
 
 	if (!strncmp (cname + 5, "Move Overhead", 13))
 	{
-		overhead = atoi (cvalue + 6);
+		overhead = strtol (cvalue + 6, NULL, 10);
 		printf ("info string move overhead set to %llums\n", overhead);
+	}
+
+	if (!strncmp (cname + 5, "Contempt", 8))
+	{
+		contempt = strtol (cvalue + 6, NULL, 10);
+		printf ("info string contempt factor set to %i\n", contempt);
 	}
 }
 
@@ -77,6 +84,7 @@ int uci_main (void)
 
 	printf ("option name Hash type spin default %u min 1 max 65536\n", DEFAULTHASH); 
 	printf ("option name Move Overhead type spin default 0 min 0 max 5000\n");
+	printf ("option name Contempt type spin default 0 min -10000 max 10000\n");
 	printf ("uciok\n");
 	fflush (stdout);
 
