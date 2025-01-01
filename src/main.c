@@ -92,6 +92,39 @@ int main (void)
 			printf ("avg %f seconds per search\n", time_since_sec (start) / 10.0);
 		}
 
+		if (!strncmp (line, "playout", 7))
+		{
+			uint64 start = time_get ();
+			int16 score, nmoves = 0;
+			int16 scores[200] = { 0 };
+			uint64 hashes[200] = { 0 };
+			move best;
+			char c[6], moves[200][6] = { 0 };
+
+			contempt = 22222;
+
+			do {
+			//	printf ("position %016llX\n", hash_poskey ());
+				board_print ();
+				hashes[nmoves] = hash_poskey ();
+
+				score = search (atoi (&line [8]), 0, &best, 0);
+				scores[nmoves] = score;
+
+				move_print (&best, c);
+				move_print (&best, moves[nmoves]);
+				printf ("%s as %s (score = %i)\n", c, curboard->side ? "black" : "white", score);
+
+				move_apply (&best);
+				nmoves ++;
+			} while (abs (score) != 15000 && abs (score) != contempt && nmoves < 200);
+
+			for (int i = 0; i < nmoves; i++)
+				printf ("%03i: hash = %016llX, move = %s, score = %i\n", i, hashes[i], moves[i], scores[i]);
+
+			printf ("%i-move playout took %f seconds\n", nmoves, time_since_sec (start));
+		}
+
 		if (!strncmp (line, "hashinfo", 8))
 			hash_info ();
 		else if (!strncmp (line, "hash", 4))
