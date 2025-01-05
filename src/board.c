@@ -221,12 +221,12 @@ void board_initialize (const char *fen)
 
 			if (p == 'R')
 			{
-				if (file == 0)
+				if (file == 0 && ((side == bs_white && rank == 21) || (side == bs_black && rank == 91)))
 				{
 					curboard->rooks [side] [0] = &curboard->pieces [idx [side]];
 					curboard->rooks [side] [0]->flags |= pf_moved;
 				}
-				else if (file == 7)
+				else if (file == 7 && ((side == bs_white && rank == 21) || (side == bs_black && rank == 91)))
 				{
 					curboard->rooks [side] [1] = &curboard->pieces [idx [side]];
 					curboard->rooks [side] [1]->flags |= pf_moved;
