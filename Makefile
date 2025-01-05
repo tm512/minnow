@@ -5,7 +5,7 @@ CFLAGS =
 LDFLAGS =
 GIT_VERSION = $(shell ./gitver.sh)
 DEFAULTHASH = 32
-CFLAGS_ = -std=c99 -pedantic -DGIT_VERSION="\"$(GIT_VERSION)\"" -DDEFAULTHASH=$(DEFAULTHASH) $(CFLAGS) 
+CFLAGS_ = -std=c99 -pedantic -DGIT_VERSION="\"$(GIT_VERSION)\"" -DDEFAULTHASH=$(DEFAULTHASH) -DBUILDTYPE=$(BUILDTYPE) $(CFLAGS)
 LDFLAGS_ = $(LDFLAGS)
 OBJDIR = obj
 OUT = minnow
@@ -15,16 +15,19 @@ default: release
 
 release: OPT = 3
 release: DBG = 0
+release: BUILDTYPE = "\"release"\"
 release: $(OUT)
 
 debug: OPT = 0
 debug: DBG = 3
+debug: BUILDTYPE = "\"debug"\"
 debug: $(OUT)
 
 profile: OPT = 2
 profile: DBG = 3
 profile: CFLAGS_ += -pg
 profile: LDFLAGS_ += -pg
+profile: BUILDTYPE = "\"profile"\"
 profile: $(OUT)
 
 strip: release

@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "ccident.h"
 #include "int.h"
 #include "uci.h"
 #include "board.h"
@@ -41,6 +42,7 @@ char line [8192]; // I think this will be enough to buffer a line
 int main (void)
 {
 	printf ("minnow " GIT_VERSION "\n");
+	printf (BUILDTYPE " build, built with " CCIDENT "\n");
 	printf ("[c] 2014-2024 Kyle Davis (tm512)\n\n");
 
 	hash_init (DEFAULTHASH * 1024 * 1024);
