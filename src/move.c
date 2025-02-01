@@ -35,6 +35,10 @@
 #define NOSORT 0
 #define SCRAMBLENODES 0
 
+#if SCRAMBLENODES
+#include <sys/random.h>
+#endif
+
 const uint32 maxnodes = 8192;
 
 move history [1024];
@@ -729,18 +733,51 @@ movelist *move_kingmove (uint8 piece, movelist **tail)
 
 movelist *nodes = NULL;
 
+#if SCRAMBLENODES
+void move_scramblenodes (void)
+{
+	uint8 scores[maxnodes];
+	movelist *tmp, *it;
+
+	// this attempts to benchmark the effect of the linked list gradually becoming scrambled
+	// as blocks of nodes are allocated, sorted, and freed
+
+	for (int i = 0; i < 1024; i++)
+	{
+		int j = 0;
+
+		// grab some quality random numbers to use as move scores
+		getrandom (scores, maxnodes, 0);
+
+		// simulate allocating every single node
+		tmp = nodes;
+		nodes = NULL;
+
+		it = tmp;
+
+		while (it)
+		{
+			it->m.score = scores [j++];
+			it = it->next;
+		}
+
+		// sort based on those random numbers and free them
+		tmp = move_order (tmp);
+		move_clearnodes (tmp);
+	}
+}
+#endif
+
 void move_initnodes (void)
 {
 	nodes = malloc (maxnodes * sizeof (movelist));
 	memset (nodes, 0, maxnodes * sizeof (movelist));
 	for (int i = 0; i < maxnodes - 1; i++)
-	{
-		#if SCRAMBLENODES
-		nodes [(i * 7037) % maxnodes].next = &nodes [i + 1];
-		#else
 		nodes [i].next = &nodes [i + 1];
-		#endif
-	}
+
+	#if SCRAMBLENODES
+	move_scramblenodes ();
+	#endif
 }
 
 movelist *move_newnode (uint8 piece, uint8 taken, uint8 square, uint8 from)
