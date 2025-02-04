@@ -1005,21 +1005,21 @@ void move_decode (const char *c, move *m)
 // check for threefold repetition in the history
 uint8 move_repcheck (void)
 {
-	int reps = 0;
+	int reps = 1;
 
-	// start from the current position and go backwards
+	// start from this side's last position (htop - 3) and go backwards
 	// searching every other ply saves time since side to move factors into the key, we can discard all moves from the opposing side
-	for (int i = htop - 1; i >= 0; i -= 2)
+	for (int i = htop - 3; i >= 0; i -= 2)
 	{
 		if (histkeys [i] == poskey)
 			reps ++;
 
+		if (reps >= 3)
+			return 1;
+
 		// pawn moves and captures make further repetitions impossible, so we can safely abort
 		if (curboard->pieces [history [i].piece].type == pt_pawn || history [i].taken != 32)
 			return 0;
-
-		if (reps >= 3)
-			return 1;
 	}
 
 	return 0;
