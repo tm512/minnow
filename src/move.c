@@ -982,15 +982,19 @@ void move_decode (const char *c, move *m)
 			switch (c [4])
 			{
 				case 'q':
+				case 'Q':
 					m->special = ms_qpromo;
 				break;
 				case 'r':
+				case 'R':
 					m->special = ms_rpromo;
 				break;
 				case 'b':
+				case 'B':
 					m->special = ms_bpromo;
 				break;
 				case 'n':
+				case 'N':
 					m->special = ms_npromo;
 				break;
 			}
