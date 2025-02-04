@@ -32,17 +32,20 @@
 
 int16 contempt = 0;
 
+#define max(a, b) ((a) > (b) ? (a) : (b))
 int16 evaluate (int16 alpha, int16 beta)
 {
 	int i;
 	int32 ret [2] = { curboard->matscore [0] + curboard->posscore [0], curboard->matscore [1] + curboard->posscore [1] };
 	int32 base;
 
-	// detect draw-ish situations
-	// if we're ahead of the opponent and have only a king and a minor piece, the position is almost guaranteed to draw
+	// insufficient material:
+	// in a pawnless endgame, if both sides have (at most) a king and one minor piece,
+	// the position is either a draw or likely to be one
+	// TODO: consider other draw-prone material combinations
 	if (curboard->piececount [curboard->side] [pt_pawn] == 0 &&
-	    curboard->matscore [curboard->side] > curboard->matscore [!curboard->side] &&
-	    curboard->matscore [curboard->side] - curboard->matscore [!curboard->side] < 10400)
+	    curboard->piececount [!curboard->side] [pt_pawn] == 0 &&
+	    max (curboard->matscore [curboard->side], curboard->matscore [!curboard->side]) < 10400)
 		return contempt;
 
 	base = ret [curboard->side] - ret [!curboard->side];
