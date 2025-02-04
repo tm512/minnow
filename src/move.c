@@ -439,7 +439,7 @@ void move_printhist (void)
 			case ms_bpromo: special = "bpromo"; break;
 		}
 
-		printf ("special: %s)\n", special);
+		printf ("special: %s, hash: %016llX)\n", special, histkeys [i]);
 	}
 }
 
