@@ -150,13 +150,14 @@ uint8 uci_parse (uint8 searching)
 	{
 		move best;
 		char c [6];
-		uint64 depth = 0, wtime = 0, btime = 0, maxtime = 0;
-		char *cdepth, *cwtime, *cbtime, *cperft;
+		uint64 depth = 0, wtime = 0, btime = 0, mtime = 0, maxtime = 0;
+		char *cdepth, *cwtime, *cbtime, *cperft, *cmtime;
 
 		// determine some search options
 		cdepth = strstr (line, "depth");
 		cwtime = strstr (line, "wtime");
 		cbtime = strstr (line, "btime");
+		cmtime = strstr (line, "movetime");
 		cperft = strstr (line, "perft");
 
 		if (cperft)
@@ -179,6 +180,9 @@ uint8 uci_parse (uint8 searching)
 		if (cbtime)
 			btime = atoi (cbtime + 6);
 
+		if (cmtime)
+			mtime = atoi (cmtime + 9);
+
 		if (depth == 1)
 			depth = 2; // never search less than 2 deep
 
@@ -188,9 +192,13 @@ uint8 uci_parse (uint8 searching)
 				maxtime = time_alloc (btime, wtime);
 			else
 				maxtime = time_alloc (wtime, btime);
-
-		//	printf ("info string allocated %llums for move\n", maxtime);
 		}
+		else if (cmtime)
+		{
+			maxtime = mtime;
+		}
+
+	//	printf ("info string allocated %llums for move\n", maxtime);
 
 		search (depth, maxtime, &best, 0);
 		move_print (&best, c);
